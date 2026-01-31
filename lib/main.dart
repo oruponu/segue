@@ -1,10 +1,12 @@
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:audio_metadata_reader/audio_metadata_reader.dart';
+import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:rxdart/rxdart.dart';
 
 void main() {
   runApp(const SegueApp());
@@ -35,6 +37,15 @@ class PlayerScreen extends StatefulWidget {
 class _PlayerScreenState extends State<PlayerScreen> {
   late AudioPlayer _player;
   String? _selectedDirectory;
+
+  Stream<PositionData> get _positionDataStream =>
+      Rx.combineLatest3<Duration, Duration, Duration?, PositionData>(
+        _player.positionStream,
+        _player.bufferedPositionStream,
+        _player.durationStream,
+        (position, bufferedPosition, duration) =>
+            PositionData(position, bufferedPosition, duration ?? Duration.zero),
+      );
 
   @override
   void initState() {
@@ -184,7 +195,34 @@ class _PlayerScreenState extends State<PlayerScreen> {
                       },
                     ),
 
-                    const SizedBox(height: 40),
+                    const SizedBox(height: 20),
+
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: StreamBuilder<PositionData>(
+                        stream: _positionDataStream,
+                        builder: (context, snapshot) {
+                          final positionData = snapshot.data;
+                          return ProgressBar(
+                            progress: positionData?.position ?? Duration.zero,
+                            buffered:
+                                positionData?.bufferedPosition ?? Duration.zero,
+                            total: positionData?.duration ?? Duration.zero,
+                            progressBarColor: Colors.white,
+                            baseBarColor: Colors.white.withValues(alpha: .24),
+                            bufferedBarColor: Colors.white.withValues(
+                              alpha: .24,
+                            ),
+                            thumbColor: Colors.white,
+                            barHeight: 3.0,
+                            thumbRadius: 6.0,
+                            onSeek: (duration) {
+                              _player.seek(duration);
+                            },
+                          );
+                        },
+                      ),
+                    ),
 
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
