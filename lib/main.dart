@@ -186,48 +186,74 @@ class _PlayerScreenState extends State<PlayerScreen> {
 
                     const SizedBox(height: 40),
 
-                    StreamBuilder<PlayerState>(
-                      stream: _player.playerStateStream,
-                      builder: (context, snapshot) {
-                        final playerState = snapshot.data;
-                        final processingState = playerState?.processingState;
-                        final playing = playerState?.playing;
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.shuffle),
+                          onPressed: () {
+                            // TODO: ランダム再生の実装
+                          },
+                        ),
 
-                        if (processingState == ProcessingState.loading ||
-                            processingState == ProcessingState.buffering) {
-                          return const CircularProgressIndicator();
-                        } else if (playing != true) {
-                          return IconButton(
-                            icon: const Icon(Icons.play_arrow),
-                            iconSize: 64.0,
-                            onPressed: _player.play,
-                          );
-                        } else if (processingState !=
-                            ProcessingState.completed) {
-                          return IconButton(
-                            icon: const Icon(Icons.pause),
-                            iconSize: 64.0,
-                            onPressed: _player.pause,
-                          );
-                        } else {
-                          return IconButton(
-                            icon: const Icon(Icons.replay),
-                            iconSize: 64.0,
-                            onPressed: () => _player.seek(Duration.zero),
-                          );
-                        }
-                      },
-                    ),
+                        IconButton(
+                          icon: const Icon(Icons.skip_previous),
+                          iconSize: 48,
+                          onPressed: () {
+                            if (_player.hasPrevious) {
+                              _player.seekToPrevious();
+                            } else {
+                              _player.seek(Duration.zero);
+                            }
+                          },
+                        ),
 
-                    const SizedBox(height: 20),
-                    IconButton(
-                      icon: const Icon(Icons.skip_next),
-                      iconSize: 48,
-                      onPressed: () {
-                        if (_player.hasNext) {
-                          _player.seekToNext();
-                        }
-                      },
+                        StreamBuilder<PlayerState>(
+                          stream: _player.playerStateStream,
+                          builder: (context, snapshot) {
+                            final playerState = snapshot.data;
+                            final processingState =
+                                playerState?.processingState;
+                            final playing = playerState?.playing;
+
+                            if (playing != true) {
+                              return IconButton(
+                                icon: const Icon(Icons.play_circle_fill),
+                                iconSize: 64,
+                                onPressed: _player.play,
+                              );
+                            } else if (processingState !=
+                                ProcessingState.completed) {
+                              return IconButton(
+                                icon: const Icon(Icons.pause_circle_filled),
+                                iconSize: 64,
+                                onPressed: _player.pause,
+                              );
+                            } else {
+                              return IconButton(
+                                icon: const Icon(Icons.replay_circle_filled),
+                                iconSize: 64,
+                                onPressed: () => _player.seek(Duration.zero),
+                              );
+                            }
+                          },
+                        ),
+
+                        IconButton(
+                          icon: const Icon(Icons.skip_next),
+                          iconSize: 48,
+                          onPressed: _player.hasNext
+                              ? _player.seekToNext
+                              : null,
+                        ),
+
+                        IconButton(
+                          icon: const Icon(Icons.repeat),
+                          onPressed: () {
+                            // TODO: リピート再生の実装
+                          },
+                        ),
+                      ],
                     ),
                   ],
                 ),
