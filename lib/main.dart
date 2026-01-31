@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
-import 'view/player_screen.dart';
+import 'view/library_screen.dart';
 
 void main() {
   runApp(const ProviderScope(child: SegueApp()));
@@ -14,7 +14,7 @@ class SegueApp extends StatelessWidget {
     return MaterialApp(
       title: 'Segue',
       theme: ThemeData.dark(),
-      home: const PlayerScreen(title: "Segue Player"),
+      home: const LibraryScreen(),
     );
   }
 }
