@@ -1,4 +1,6 @@
 import 'dart:io';
+import 'dart:typed_data';
+import 'package:audio_metadata_reader/audio_metadata_reader.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
@@ -72,10 +74,11 @@ class _PlayerScreenState extends State<PlayerScreen> {
     }
 
     List<FileSystemEntity> files = directory.listSync();
-    final List<AudioSource> audioSources = files
-        .where((file) => file.path.endsWith('.mp3'))
-        .map((file) => AudioSource.uri(Uri.parse(file.path)))
-        .toList();
+    List<AudioSource> audioSources = [];
+    for (var file in files) {
+      final metadata = await readMetadata(File(file.path), getImage: true);
+      audioSources.add(AudioSource.uri(Uri.parse(file.path), tag: metadata));
+    }
 
     await _player.setAudioSources(audioSources);
   }
@@ -108,6 +111,81 @@ class _PlayerScreenState extends State<PlayerScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
+                    StreamBuilder<SequenceState?>(
+                      stream: _player.sequenceStateStream,
+                      builder: (context, snapshot) {
+                        final state = snapshot.data;
+                        if (state == null || state.sequence.isEmpty) {
+                          return const SizedBox();
+                        }
+
+                        final currentSource = state.currentSource;
+                        if (currentSource == null) {
+                          return const SizedBox();
+                        }
+
+                        final metadata = currentSource.tag as AudioMetadata?;
+                        Uint8List? albumArt;
+                        if (metadata != null && metadata.pictures.isNotEmpty) {
+                          albumArt = metadata.pictures.first.bytes;
+                        }
+
+                        return Column(
+                          children: [
+                            Container(
+                              width: 250,
+                              height: 250,
+                              decoration: BoxDecoration(
+                                color: Colors.grey[800],
+                                borderRadius: BorderRadius.circular(12),
+                                boxShadow: const [
+                                  BoxShadow(
+                                    color: Colors.black45,
+                                    blurRadius: 10,
+                                    offset: Offset(0, 5),
+                                  ),
+                                ],
+                              ),
+
+                              child: albumArt != null
+                                  ? ClipRRect(
+                                      borderRadius: BorderRadius.circular(12),
+                                      child: Image.memory(
+                                        albumArt,
+                                        fit: BoxFit.cover,
+                                      ),
+                                    )
+                                  : const Icon(
+                                      Icons.music_note,
+                                      size: 100,
+                                      color: Colors.white24,
+                                    ),
+                            ),
+                            const SizedBox(height: 30),
+                            Text(
+                              metadata?.title ?? "Unknown Title",
+                              style: const TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              metadata?.artist ?? "Unknown Artist",
+                              style: const TextStyle(
+                                fontSize: 18,
+                                color: Colors.white70,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+
+                    const SizedBox(height: 40),
+
                     StreamBuilder<PlayerState>(
                       stream: _player.playerStateStream,
                       builder: (context, snapshot) {
