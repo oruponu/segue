@@ -31,11 +31,19 @@ class LibraryScreen extends ConsumerWidget {
                 final metadata = state.playlist[index];
                 return ListTile(
                   leading: _buildThumbnail(metadata),
-                  title: Text(metadata.title ?? "Unknown Title"),
+                  title: Text(
+                    metadata.title ?? "Unknown Title",
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                   subtitle: Row(
                     children: [
                       Expanded(
-                        child: Text(metadata.artist ?? "Unknown Artist"),
+                        child: Text(
+                          metadata.artist ?? "Unknown Artist",
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                       Text(
                         _formatDuration(metadata.duration),
