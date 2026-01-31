@@ -1,0 +1,73 @@
+import 'package:audio_metadata_reader/audio_metadata_reader.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/material.dart';
+import '../view_model/library_view_model.dart';
+import 'player_screen.dart';
+
+class LibraryScreen extends ConsumerWidget {
+  const LibraryScreen({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(libraryViewModelProvider);
+    final viewModel = ref.read(libraryViewModelProvider.notifier);
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("ライブラリ"),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.folder_open),
+            onPressed: viewModel.selectDirectory,
+          ),
+        ],
+      ),
+      body: state.isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : state.playlist.isEmpty
+          ? const Center(child: Text("フォルダを選択してください"))
+          : ListView.builder(
+              itemBuilder: (context, index) {
+                final metadata = state.playlist[index];
+                return ListTile(
+                  leading: _buildThumbnail(metadata),
+                  title: Text(metadata.title ?? "Unknown Title"),
+                  subtitle: Text(metadata.artist ?? "Unknown Artist"),
+                  onTap: () async {
+                    await viewModel.playItem(index);
+                    if (context.mounted) {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              const PlayerScreen(title: "Now Playing"),
+                        ),
+                      );
+                    }
+                  },
+                );
+              },
+              itemCount: state.playlist.length,
+            ),
+    );
+  }
+
+  Widget _buildThumbnail(AudioMetadata metadata) {
+    if (metadata.pictures.isNotEmpty) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(4),
+        child: Image.memory(
+          metadata.pictures.first.bytes,
+          width: 48,
+          height: 48,
+          fit: BoxFit.cover,
+        ),
+      );
+    }
+    return Container(
+      width: 48,
+      height: 48,
+      color: Colors.grey[800],
+      child: const Icon(Icons.music_note),
+    );
+  }
+}
