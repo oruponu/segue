@@ -1,4 +1,4 @@
-package com.example.segue
+package com.oruponu.segue
 
 import io.flutter.embedding.android.FlutterActivity
 
