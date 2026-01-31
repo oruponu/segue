@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:rxdart/rxdart.dart';
+import 'model/position_data.dart';
 
 void main() {
   runApp(const SegueApp());
@@ -302,12 +303,4 @@ class _PlayerScreenState extends State<PlayerScreen> {
       ),
     );
   }
-}
-
-class PositionData {
-  final Duration position;
-  final Duration bufferedPosition;
-  final Duration duration;
-
-  PositionData(this.position, this.bufferedPosition, this.duration);
 }
