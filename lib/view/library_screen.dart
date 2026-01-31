@@ -61,14 +61,16 @@ class LibraryScreen extends ConsumerWidget {
                   ),
                   onTap: () async {
                     await viewModel.playItem(index);
-                    showModalBottomSheet(
-                      context: context,
-                      builder: (context) =>
-                          const PlayerScreen(title: "Now Playing"),
-                      backgroundColor: Colors.transparent,
-                      isScrollControlled: true,
-                      useSafeArea: true,
-                    );
+                    if (context.mounted) {
+                      showModalBottomSheet(
+                        context: context,
+                        builder: (context) =>
+                            const PlayerScreen(title: "Now Playing"),
+                        backgroundColor: Colors.transparent,
+                        isScrollControlled: true,
+                        useSafeArea: true,
+                      );
+                    }
                   },
                   tileColor: isPlaying
                       ? Colors.blue.withValues(alpha: 0.1)
