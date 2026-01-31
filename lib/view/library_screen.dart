@@ -11,6 +11,7 @@ class LibraryScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(libraryViewModelProvider);
     final viewModel = ref.read(libraryViewModelProvider.notifier);
+    final currentMetadata = state.playingMetadata;
 
     return Scaffold(
       appBar: AppBar(
@@ -29,6 +30,10 @@ class LibraryScreen extends ConsumerWidget {
           : ListView.builder(
               itemBuilder: (context, index) {
                 final metadata = state.playlist[index];
+                final isPlaying =
+                    currentMetadata != null &&
+                    currentMetadata.title == metadata.title &&
+                    currentMetadata.artist == metadata.artist;
                 return ListTile(
                   leading: _buildThumbnail(metadata),
                   title: Text(
@@ -65,6 +70,9 @@ class LibraryScreen extends ConsumerWidget {
                       useSafeArea: true,
                     );
                   },
+                  tileColor: isPlaying
+                      ? Colors.blue.withValues(alpha: 0.1)
+                      : null,
                 );
               },
               itemCount: state.playlist.length,
