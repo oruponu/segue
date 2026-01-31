@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:audio_metadata_reader/audio_metadata_reader.dart';
 import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -10,7 +11,7 @@ import 'package:rxdart/rxdart.dart';
 import 'model/position_data.dart';
 
 void main() {
-  runApp(const SegueApp());
+  runApp(const ProviderScope(child: SegueApp()));
 }
 
 class SegueApp extends StatelessWidget {
