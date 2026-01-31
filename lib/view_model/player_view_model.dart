@@ -13,10 +13,10 @@ class PlayerViewModel extends Notifier<PlayerState> {
   @override
   PlayerState build() {
     final player = ref.read(audioPlayerProvider);
-    player.sequenceStateStream.listen((state) {
-      if (state.currentSource != null) {
-        final metadata = state.currentSource?.tag as AudioMetadata?;
-        this.state = this.state.copyWith(currentMetadata: metadata);
+    player.sequenceStateStream.listen((sequenceState) {
+      if (sequenceState.currentSource != null) {
+        final metadata = sequenceState.currentSource?.tag as AudioMetadata?;
+        state = state.copyWith(currentMetadata: metadata);
       }
     });
     return PlayerState();
