@@ -56,14 +56,14 @@ class LibraryScreen extends ConsumerWidget {
                   ),
                   onTap: () async {
                     await viewModel.playItem(index);
-                    if (context.mounted) {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) =>
-                              const PlayerScreen(title: "Now Playing"),
-                        ),
-                      );
-                    }
+                    showModalBottomSheet(
+                      context: context,
+                      builder: (context) =>
+                          const PlayerScreen(title: "Now Playing"),
+                      backgroundColor: Colors.transparent,
+                      isScrollControlled: true,
+                      useSafeArea: true,
+                    );
                   },
                 );
               },
