@@ -32,7 +32,20 @@ class LibraryScreen extends ConsumerWidget {
                 return ListTile(
                   leading: _buildThumbnail(metadata),
                   title: Text(metadata.title ?? "Unknown Title"),
-                  subtitle: Text(metadata.artist ?? "Unknown Artist"),
+                  subtitle: Row(
+                    children: [
+                      Expanded(
+                        child: Text(metadata.artist ?? "Unknown Artist"),
+                      ),
+                      Text(
+                        _formatDuration(metadata.duration),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    ],
+                  ),
                   onTap: () async {
                     await viewModel.playItem(index);
                     if (context.mounted) {
@@ -69,5 +82,14 @@ class LibraryScreen extends ConsumerWidget {
       color: Colors.grey[800],
       child: const Icon(Icons.music_note),
     );
+  }
+
+  String _formatDuration(Duration? duration) {
+    if (duration == null) return "--:--";
+
+    String twoDigits(int n) => n.toString().padLeft(2, '0');
+    final minutes = twoDigits(duration.inMinutes.remainder(60));
+    final seconds = twoDigits(duration.inSeconds.remainder(60));
+    return "$minutes:$seconds";
   }
 }
