@@ -19,9 +19,7 @@ class LibraryViewModel extends Notifier<LibraryState> {
     player.sequenceStateStream.listen((sequenceState) {
       if (sequenceState.currentSource != null) {
         final metadata = sequenceState.currentSource?.tag as AudioMetadata?;
-        if (state.playingMetadata != metadata) {
-          state = state.copyWith(playingMetadata: metadata);
-        }
+        state = state.copyWith(playingMetadata: metadata);
       }
     });
     return LibraryState();
