@@ -1,22 +1,22 @@
 import 'package:audio_metadata_reader/audio_metadata_reader.dart';
 
-class MusicPlayerState {
+class PlayerState {
   final String? selectedDirectory;
   final bool isLoading;
   final AudioMetadata? currentMetadata;
 
-  MusicPlayerState({
+  PlayerState({
     this.selectedDirectory,
     this.isLoading = false,
     this.currentMetadata,
   });
 
-  MusicPlayerState copyWith({
+  PlayerState copyWith({
     String? selectedDirectory,
     bool? isLoading,
     AudioMetadata? currentMetadata,
   }) {
-    return MusicPlayerState(
+    return PlayerState(
       selectedDirectory: selectedDirectory ?? this.selectedDirectory,
       isLoading: isLoading ?? this.isLoading,
       currentMetadata: currentMetadata ?? this.currentMetadata,
