@@ -1,6 +1,8 @@
+import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 void main() {
   runApp(const SegueApp());
@@ -47,6 +49,35 @@ class _PlayerScreenState extends State<PlayerScreen> {
     setState(() {
       _selectedDirectory = selectedDirectory;
     });
+
+    await _loadAudioSources(selectedDirectory);
+  }
+
+  Future<void> _loadAudioSources(String path) async {
+    var audioStatus = await Permission.audio.status;
+    if (!audioStatus.isGranted) {
+      audioStatus = await Permission.audio.request();
+    }
+
+    if (!audioStatus.isGranted) {
+      var storageStatus = await Permission.storage.request();
+      if (!storageStatus.isGranted) {
+        return;
+      }
+    }
+
+    final directory = Directory(path);
+    if (!await directory.exists()) {
+      return;
+    }
+
+    List<FileSystemEntity> files = directory.listSync();
+    final List<AudioSource> audioSources = files
+        .where((file) => file.path.endsWith('.mp3'))
+        .map((file) => AudioSource.uri(Uri.parse(file.path)))
+        .toList();
+
+    await _player.setAudioSources(audioSources);
   }
 
   @override
