@@ -3,6 +3,7 @@ import 'package:audio_metadata_reader/audio_metadata_reader.dart';
 import 'package:audio_service/audio_service.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../model/library_state.dart';
 import '../providers/audio_handler_provider.dart';
@@ -75,7 +76,18 @@ class LibraryViewModel extends Notifier<LibraryState> {
         .map((file) => readMetadata(File(file.path), getImage: true))
         .toList();
     final mediaItems = <MediaItem>[];
+    final tempDir = await getTemporaryDirectory();
     for (var metadata in metadataList) {
+      Uri? artUri;
+      if (metadata.pictures.isNotEmpty) {
+        final picture = metadata.pictures.first;
+        final artFile = File(
+          '${tempDir.path}/${metadata.file.path.hashCode}.jpg',
+        );
+        await artFile.writeAsBytes(picture.bytes);
+        artUri = Uri.file(artFile.path);
+      }
+
       mediaItems.add(
         MediaItem(
           id: metadata.file.path,
@@ -83,6 +95,7 @@ class LibraryViewModel extends Notifier<LibraryState> {
           album: metadata.album,
           artist: metadata.artist,
           duration: metadata.duration,
+          artUri: artUri,
         ),
       );
     }
