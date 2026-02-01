@@ -17,33 +17,15 @@ class LibraryViewModel extends Notifier<LibraryState> {
   LibraryState build() {
     ref.listen(mediaItemProvider, (previous, next) {
       next.whenData((item) {
-        state = state.copyWith(
-          playingMetadata: item != null
-              ? AudioMetadata(
-                  file: File(item.id),
-                  title: item.title,
-                  album: item.album,
-                  artist: item.artist,
-                  duration: item.duration,
-                )
-              : null,
-        );
+        state = state.copyWith(playingMediaItem: item);
       });
     });
 
     final initialMediaItem = ref.read(mediaItemProvider);
     return LibraryState(
-      playingMetadata: initialMediaItem.maybeWhen(
+      playingMediaItem: initialMediaItem.maybeWhen(
         orElse: () => null,
-        data: (item) => item != null
-            ? AudioMetadata(
-                file: File(item.id),
-                title: item.title,
-                album: item.album,
-                artist: item.artist,
-                duration: item.duration,
-              )
-            : null,
+        data: (item) => item,
       ),
     );
   }
@@ -92,19 +74,20 @@ class LibraryViewModel extends Notifier<LibraryState> {
         .listSync()
         .map((file) => readMetadata(File(file.path), getImage: true))
         .toList();
-    final mediaItems = metadataList
-        .map(
-          (metadata) => MediaItem(
-            id: metadata.file.path,
-            title: metadata.title ?? "Unknown Title",
-            album: metadata.album,
-            artist: metadata.artist,
-            duration: metadata.duration,
-          ),
-        )
-        .toList();
+    final mediaItems = <MediaItem>[];
+    for (var metadata in metadataList) {
+      mediaItems.add(
+        MediaItem(
+          id: metadata.file.path,
+          title: metadata.title ?? "Unknown Title",
+          album: metadata.album,
+          artist: metadata.artist,
+          duration: metadata.duration,
+        ),
+      );
+    }
     await handler.updateQueue(mediaItems);
 
-    state = state.copyWith(playlist: metadataList, isLoading: false);
+    state = state.copyWith(playlist: mediaItems, isLoading: false);
   }
 }

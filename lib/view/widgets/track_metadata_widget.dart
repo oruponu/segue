@@ -9,11 +9,7 @@ class TrackMetadataWidget extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(playerViewModelProvider);
-    final metadata = state.currentMetadata;
-    Uint8List? albumArt;
-    if (metadata != null && metadata.pictures.isNotEmpty) {
-      albumArt = metadata.pictures.first.bytes;
-    }
+    final mediaItem = state.playingMediaItem;
 
     return Column(
       children: [
@@ -41,13 +37,13 @@ class TrackMetadataWidget extends ConsumerWidget {
         ),
         const SizedBox(height: 30),
         Text(
-          metadata?.title ?? "Unknown Title",
+          mediaItem?.title ?? "Unknown Title",
           style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 8),
         Text(
-          metadata?.artist ?? "Unknown Artist",
+          mediaItem?.artist ?? "Unknown Artist",
           style: const TextStyle(fontSize: 18, color: Colors.white70),
           textAlign: TextAlign.center,
         ),

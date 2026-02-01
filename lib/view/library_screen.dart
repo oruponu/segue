@@ -11,7 +11,7 @@ class LibraryScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(libraryViewModelProvider);
     final viewModel = ref.read(libraryViewModelProvider.notifier);
-    final currentMetadata = state.playingMetadata;
+    final playingMediaItem = state.playingMediaItem;
 
     return Scaffold(
       appBar: AppBar(
@@ -31,13 +31,13 @@ class LibraryScreen extends ConsumerWidget {
               itemBuilder: (context, index) {
                 final metadata = state.playlist[index];
                 final isPlaying =
-                    currentMetadata != null &&
-                    currentMetadata.title == metadata.title &&
-                    currentMetadata.artist == metadata.artist;
+                    playingMediaItem != null &&
+                    playingMediaItem.title == metadata.title &&
+                    playingMediaItem.artist == metadata.artist;
                 return ListTile(
                   leading: _buildThumbnail(metadata),
                   title: Text(
-                    metadata.title ?? "Unknown Title",
+                    metadata.title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),

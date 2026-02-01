@@ -1,29 +1,29 @@
-import 'package:audio_metadata_reader/audio_metadata_reader.dart';
+import 'package:audio_service/audio_service.dart';
 
 class LibraryState {
-  final List<AudioMetadata> playlist;
+  final List<MediaItem> playlist;
   final bool isLoading;
   final String? selectedDirectory;
-  final AudioMetadata? playingMetadata;
+  final MediaItem? playingMediaItem;
 
   LibraryState({
     this.playlist = const [],
     this.isLoading = false,
     this.selectedDirectory,
-    this.playingMetadata,
+    this.playingMediaItem,
   });
 
   LibraryState copyWith({
-    List<AudioMetadata>? playlist,
+    List<MediaItem>? playlist,
     bool? isLoading,
     String? selectedDirectory,
-    AudioMetadata? playingMetadata,
+    MediaItem? playingMediaItem,
   }) {
     return LibraryState(
       playlist: playlist ?? this.playlist,
       isLoading: isLoading ?? this.isLoading,
       selectedDirectory: selectedDirectory ?? this.selectedDirectory,
-      playingMetadata: playingMetadata ?? this.playingMetadata,
+      playingMediaItem: playingMediaItem ?? this.playingMediaItem,
     );
   }
 }
