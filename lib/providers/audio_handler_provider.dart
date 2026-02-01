@@ -32,6 +32,15 @@ class AudioHandler extends BaseAudioHandler {
     _player.playerStateStream.listen((state) {
       playbackState.add(
         playbackState.value.copyWith(
+          processingState:
+              const {
+                ProcessingState.idle: AudioProcessingState.idle,
+                ProcessingState.loading: AudioProcessingState.loading,
+                ProcessingState.buffering: AudioProcessingState.buffering,
+                ProcessingState.ready: AudioProcessingState.ready,
+                ProcessingState.completed: AudioProcessingState.completed,
+              }[state.processingState] ??
+              AudioProcessingState.idle,
           playing: state.playing,
           controls: [
             MediaControl.skipToPrevious,
