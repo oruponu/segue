@@ -1,4 +1,4 @@
-import 'package:audio_metadata_reader/audio_metadata_reader.dart';
+import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
 import '../view_model/library_view_model.dart';
@@ -35,7 +35,7 @@ class LibraryScreen extends ConsumerWidget {
                     playingMediaItem.title == metadata.title &&
                     playingMediaItem.artist == metadata.artist;
                 return ListTile(
-                  leading: _buildThumbnail(metadata),
+                  leading: _buildThumbnail(metadata.artUri),
                   title: Text(
                     metadata.title,
                     maxLines: 1,
@@ -82,12 +82,12 @@ class LibraryScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildThumbnail(AudioMetadata metadata) {
-    if (metadata.pictures.isNotEmpty) {
+  Widget _buildThumbnail(Uri? artUri) {
+    if (artUri != null) {
       return ClipRRect(
         borderRadius: BorderRadius.circular(4),
-        child: Image.memory(
-          metadata.pictures.first.bytes,
+        child: Image.file(
+          File.fromUri(artUri),
           width: 48,
           height: 48,
           fit: BoxFit.cover,

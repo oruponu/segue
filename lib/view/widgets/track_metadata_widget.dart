@@ -1,4 +1,4 @@
-import 'dart:typed_data';
+import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
 import '../../view_model/player_view_model.dart';
@@ -28,12 +28,7 @@ class TrackMetadataWidget extends ConsumerWidget {
             ],
           ),
 
-          child: albumArt != null
-              ? ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: Image.memory(albumArt, fit: BoxFit.cover),
-                )
-              : const Icon(Icons.music_note, size: 100, color: Colors.white24),
+          child: _buildThumbnail(mediaItem?.artUri),
         ),
         const SizedBox(height: 30),
         Text(
@@ -49,5 +44,15 @@ class TrackMetadataWidget extends ConsumerWidget {
         ),
       ],
     );
+  }
+
+  Widget _buildThumbnail(Uri? artUri) {
+    if (artUri != null) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Image.file(File.fromUri(artUri), fit: BoxFit.cover),
+      );
+    }
+    return const Icon(Icons.music_note, size: 100, color: Colors.white24);
   }
 }
