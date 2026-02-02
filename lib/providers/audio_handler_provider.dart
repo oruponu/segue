@@ -3,10 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:just_audio/just_audio.dart';
 
 final audioHandlerProvider = Provider<AudioHandler>((ref) {
-  return ref.watch(_audioHandlerInternalProvider).requireValue;
+  return ref.watch(audioHandlerFutureProvider).requireValue;
 });
 
-final _audioHandlerInternalProvider = FutureProvider<AudioHandler>((ref) async {
+final audioHandlerFutureProvider = FutureProvider<AudioHandler>((ref) async {
   final player = AudioPlayer();
   return await AudioService.init(
     builder: () => AudioHandler(player),
