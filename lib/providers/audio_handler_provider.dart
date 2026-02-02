@@ -65,6 +65,18 @@ class AudioHandler extends BaseAudioHandler {
     });
   }
 
+  Stream<Duration?> get durationStream => _player.durationStream;
+
+  Stream<Duration> get bufferedPositionStream => _player.bufferedPositionStream;
+
+  Stream<PlayerState> get playerStateStream => _player.playerStateStream;
+
+  bool get hasNext => _player.hasNext;
+
+  bool get hasPrevious => _player.hasPrevious;
+
+  Stream<Duration> get positionStream => _player.positionStream;
+
   @override
   Future<void> play() async => await _player.play();
 
