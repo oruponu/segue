@@ -51,6 +51,13 @@ class AudioHandler extends BaseAudioHandler {
           updatePosition: _player.position,
           bufferedPosition: _player.bufferedPosition,
           speed: _player.speed,
+          repeatMode:
+              const {
+                LoopMode.off: AudioServiceRepeatMode.none,
+                LoopMode.one: AudioServiceRepeatMode.one,
+                LoopMode.all: AudioServiceRepeatMode.all,
+              }[_player.loopMode] ??
+              AudioServiceRepeatMode.none,
           shuffleMode: _player.shuffleModeEnabled
               ? AudioServiceShuffleMode.all
               : AudioServiceShuffleMode.none,
@@ -76,6 +83,8 @@ class AudioHandler extends BaseAudioHandler {
   bool get hasNext => _player.hasNext;
 
   bool get hasPrevious => _player.hasPrevious;
+
+  Stream<LoopMode> get loopModeStream => _player.loopModeStream;
 
   Stream<bool> get shuffleModeEnabledStream => _player.shuffleModeEnabledStream;
 
@@ -108,6 +117,18 @@ class AudioHandler extends BaseAudioHandler {
 
   @override
   Future<void> seek(Duration position) async => await _player.seek(position);
+
+  @override
+  Future<void> setRepeatMode(AudioServiceRepeatMode repeatMode) async {
+    final loopMode =
+        const {
+          AudioServiceRepeatMode.none: LoopMode.off,
+          AudioServiceRepeatMode.one: LoopMode.one,
+          AudioServiceRepeatMode.all: LoopMode.all,
+        }[repeatMode] ??
+        LoopMode.off;
+    await _player.setLoopMode(loopMode);
+  }
 
   @override
   Future<void> setShuffleMode(AudioServiceShuffleMode shuffleMode) async {

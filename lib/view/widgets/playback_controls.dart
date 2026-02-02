@@ -62,10 +62,38 @@ class PlaybackControls extends ConsumerWidget {
               onPressed: handler.hasNext ? handler.skipToNext : null,
             ),
 
-            IconButton(
-              icon: const Icon(Icons.repeat),
-              onPressed: () {
-                // TODO: リピート再生の実装
+            StreamBuilder<LoopMode>(
+              stream: handler.loopModeStream,
+              builder: (context, snapshot) {
+                final loopMode = snapshot.data ?? LoopMode.off;
+                IconData icon;
+                Color? color;
+                switch (loopMode) {
+                  case LoopMode.off:
+                    icon = Icons.repeat;
+                    color = null;
+                    break;
+                  case LoopMode.one:
+                    icon = Icons.repeat_one;
+                    color = Theme.of(context).colorScheme.primary;
+                    break;
+                  case LoopMode.all:
+                    icon = Icons.repeat;
+                    color = Theme.of(context).colorScheme.primary;
+                    break;
+                }
+
+                return IconButton(
+                  icon: Icon(icon, color: color),
+                  onPressed: () {
+                    final newMode = switch (loopMode) {
+                      LoopMode.off => AudioServiceRepeatMode.all,
+                      LoopMode.all => AudioServiceRepeatMode.one,
+                      LoopMode.one => AudioServiceRepeatMode.none,
+                    };
+                    handler.setRepeatMode(newMode);
+                  },
+                );
               },
             ),
           ],
