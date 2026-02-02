@@ -28,7 +28,7 @@ class AudioHandler extends BaseAudioHandler {
   final AudioPlayer _player;
 
   AudioHandler(this._player) {
-    _player.playerStateStream.listen((state) {
+    _player.playbackEventStream.listen((event) {
       playbackState.add(
         playbackState.value.copyWith(
           processingState:
@@ -38,12 +38,12 @@ class AudioHandler extends BaseAudioHandler {
                 ProcessingState.buffering: AudioProcessingState.buffering,
                 ProcessingState.ready: AudioProcessingState.ready,
                 ProcessingState.completed: AudioProcessingState.completed,
-              }[state.processingState] ??
+              }[_player.processingState] ??
               AudioProcessingState.idle,
-          playing: state.playing,
+          playing: _player.playing,
           controls: [
             MediaControl.skipToPrevious,
-            state.playing ? MediaControl.pause : MediaControl.play,
+            _player.playing ? MediaControl.pause : MediaControl.play,
             MediaControl.skipToNext,
           ],
           androidCompactActionIndices: const [1, 2],
@@ -51,6 +51,7 @@ class AudioHandler extends BaseAudioHandler {
           updatePosition: _player.position,
           bufferedPosition: _player.bufferedPosition,
           speed: _player.speed,
+          queueIndex: event.currentIndex,
         ),
       );
     });
