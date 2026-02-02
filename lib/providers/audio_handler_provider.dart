@@ -1,14 +1,13 @@
 import 'package:audio_service/audio_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:just_audio/just_audio.dart';
-import 'audio_player_provider.dart';
 
 final audioHandlerProvider = Provider<AudioHandler>((ref) {
   return ref.watch(_audioHandlerInternalProvider).requireValue;
 });
 
 final _audioHandlerInternalProvider = FutureProvider<AudioHandler>((ref) async {
-  final player = ref.watch(audioPlayerProvider);
+  final player = AudioPlayer();
   return await AudioService.init(
     builder: () => AudioHandler(player),
     config: const AudioServiceConfig(
