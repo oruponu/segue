@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:just_audio/just_audio.dart';
-import '../../providers/audio_player_provider.dart';
+import '../../providers/audio_handler_provider.dart';
 
 class PlaybackControls extends ConsumerWidget {
   const PlaybackControls({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final player = ref.watch(audioPlayerProvider);
+    final handler = ref.watch(audioHandlerProvider);
 
     return StreamBuilder<PlayerState>(
-      stream: player.playerStateStream,
+      stream: handler.playerStateStream,
       builder: (context, snapshot) {
         final playerState = snapshot.data;
         final processingState = playerState?.processingState;
@@ -31,20 +31,20 @@ class PlaybackControls extends ConsumerWidget {
               icon: const Icon(Icons.skip_previous),
               iconSize: 48,
               onPressed: () {
-                if (player.hasPrevious) {
-                  player.seekToPrevious();
+                if (handler.hasPrevious) {
+                  handler.skipToPrevious();
                 } else {
-                  player.seek(Duration.zero);
+                  handler.seek(Duration.zero);
                 }
               },
             ),
 
-            _buildPlayPauseButton(processingState, playing, player),
+            _buildPlayPauseButton(processingState, playing, handler),
 
             IconButton(
               icon: const Icon(Icons.skip_next),
               iconSize: 48,
-              onPressed: player.hasNext ? player.seekToNext : null,
+              onPressed: handler.hasNext ? handler.skipToNext : null,
             ),
 
             IconButton(
@@ -62,25 +62,25 @@ class PlaybackControls extends ConsumerWidget {
   Widget _buildPlayPauseButton(
     ProcessingState? state,
     bool? playing,
-    AudioPlayer player,
+    AudioHandler handler,
   ) {
     if (playing != true) {
       return IconButton(
         icon: const Icon(Icons.play_circle_fill),
         iconSize: 64,
-        onPressed: player.play,
+        onPressed: handler.play,
       );
     } else if (state != ProcessingState.completed) {
       return IconButton(
         icon: const Icon(Icons.pause_circle_filled),
         iconSize: 64,
-        onPressed: player.pause,
+        onPressed: handler.pause,
       );
     } else {
       return IconButton(
         icon: const Icon(Icons.replay_circle_filled),
         iconSize: 64,
-        onPressed: () => player.seek(Duration.zero),
+        onPressed: () => handler.seek(Duration.zero),
       );
     }
   }

@@ -1,7 +1,7 @@
 import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../providers/audio_player_provider.dart';
+import '../../providers/audio_handler_provider.dart';
 import '../../providers/position_provider.dart';
 
 class ProgressBarWidget extends ConsumerWidget {
@@ -10,7 +10,7 @@ class ProgressBarWidget extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final positionDataAsync = ref.watch(positionProvider);
-    final player = ref.read(audioPlayerProvider);
+    final handler = ref.read(audioHandlerProvider);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -26,7 +26,7 @@ class ProgressBarWidget extends ConsumerWidget {
           barHeight: 3.0,
           thumbRadius: 6.0,
           onSeek: (duration) {
-            player.seek(duration);
+            handler.seek(duration);
           },
         ),
         error: (_, __) => const SizedBox(),
