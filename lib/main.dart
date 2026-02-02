@@ -1,9 +1,17 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
+import 'providers/audio_handler_provider.dart';
 import 'view/main_screen.dart';
 
-void main() {
-  runApp(const ProviderScope(child: SegueApp()));
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  final container = ProviderContainer();
+  await container.read(audioHandlerFutureProvider.future);
+
+  runApp(
+    UncontrolledProviderScope(container: container, child: const SegueApp()),
+  );
 }
 
 class SegueApp extends StatelessWidget {
