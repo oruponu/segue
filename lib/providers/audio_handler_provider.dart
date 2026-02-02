@@ -44,10 +44,9 @@ class AudioHandler extends BaseAudioHandler {
           controls: [
             MediaControl.skipToPrevious,
             state.playing ? MediaControl.pause : MediaControl.play,
-            MediaControl.stop,
             MediaControl.skipToNext,
           ],
-          androidCompactActionIndices: const [1, 3],
+          androidCompactActionIndices: const [1, 2],
           systemActions: {MediaAction.seek},
           updatePosition: _player.position,
           bufferedPosition: _player.bufferedPosition,
