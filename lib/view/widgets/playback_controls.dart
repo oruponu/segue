@@ -1,3 +1,4 @@
+import 'package:audio_service/audio_service.dart' hide AudioHandler;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:just_audio/just_audio.dart';
@@ -20,10 +21,24 @@ class PlaybackControls extends ConsumerWidget {
         return Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            IconButton(
-              icon: const Icon(Icons.shuffle),
-              onPressed: () {
-                // TODO: ランダム再生の実装
+            StreamBuilder<bool>(
+              stream: handler.shuffleModeEnabledStream,
+              builder: (context, snapshot) {
+                final enabled = snapshot.data ?? false;
+                return IconButton(
+                  icon: Icon(
+                    Icons.shuffle,
+                    color: enabled
+                        ? Theme.of(context).colorScheme.primary
+                        : null,
+                  ),
+                  onPressed: () async {
+                    final newMode = enabled
+                        ? AudioServiceShuffleMode.none
+                        : AudioServiceShuffleMode.all;
+                    await handler.setShuffleMode(newMode);
+                  },
+                );
               },
             ),
 

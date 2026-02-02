@@ -51,6 +51,9 @@ class AudioHandler extends BaseAudioHandler {
           updatePosition: _player.position,
           bufferedPosition: _player.bufferedPosition,
           speed: _player.speed,
+          shuffleMode: _player.shuffleModeEnabled
+              ? AudioServiceShuffleMode.all
+              : AudioServiceShuffleMode.none,
           queueIndex: event.currentIndex,
         ),
       );
@@ -73,6 +76,8 @@ class AudioHandler extends BaseAudioHandler {
   bool get hasNext => _player.hasNext;
 
   bool get hasPrevious => _player.hasPrevious;
+
+  Stream<bool> get shuffleModeEnabledStream => _player.shuffleModeEnabledStream;
 
   Stream<Duration> get positionStream => _player.positionStream;
 
@@ -103,4 +108,10 @@ class AudioHandler extends BaseAudioHandler {
 
   @override
   Future<void> seek(Duration position) async => await _player.seek(position);
+
+  @override
+  Future<void> setShuffleMode(AudioServiceShuffleMode shuffleMode) async {
+    final enabled = shuffleMode == AudioServiceShuffleMode.all;
+    await _player.setShuffleModeEnabled(enabled);
+  }
 }
