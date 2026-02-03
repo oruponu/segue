@@ -80,6 +80,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
             minChildSize: minSize,
             maxChildSize: 1.0,
             snap: true,
+            snapAnimationDuration: const Duration(milliseconds: 150),
             controller: _controller,
             builder: (context, scrollController) {
               return AnimatedBuilder(
