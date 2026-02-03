@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'player_screen.dart';
 import 'library_screen.dart';
 import 'widgets/mini_player.dart';
+import '../model/player_sheet_state.dart';
+import '../providers/player_sheet_controller_provider.dart';
 
-class MainScreen extends StatefulWidget {
+class MainScreen extends ConsumerStatefulWidget {
   const MainScreen({super.key});
 
   @override
-  State<MainScreen> createState() => _MainScreenState();
+  ConsumerState<MainScreen> createState() => _MainScreenState();
 }
 
-class _MainScreenState extends State<MainScreen> {
+class _MainScreenState extends ConsumerState<MainScreen> {
   final DraggableScrollableController _controller =
       DraggableScrollableController();
 
@@ -21,6 +24,30 @@ class _MainScreenState extends State<MainScreen> {
     final double minSize =
         (miniPlayerHeight + MediaQuery.of(context).padding.bottom) /
         screenHeight;
+
+    ref.listen<PlayerSheetState>(playerSheetControllerProvider, (
+      previous,
+      next,
+    ) {
+      if (!_controller.isAttached) return;
+
+      switch (next.action) {
+        case PlayerSheetAction.expand:
+          _controller.animateTo(
+            1.0,
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOutCubic,
+          );
+        case PlayerSheetAction.collapse:
+          _controller.animateTo(
+            minSize,
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOutCubic,
+          );
+        case PlayerSheetAction.none:
+          break;
+      }
+    });
 
     return Scaffold(
       body: Stack(
