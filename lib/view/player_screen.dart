@@ -1,8 +1,8 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'widgets/playback_controls.dart';
-import 'widgets/progress_bar_widget.dart';
-import 'widgets/track_metadata_widget.dart';
+import 'package:flutter/material.dart';
+import 'package:segue/view/widgets/playback_controls.dart';
+import 'package:segue/view/widgets/progress_bar_widget.dart';
+import 'package:segue/view/widgets/track_metadata_widget.dart';
 
 class PlayerScreen extends ConsumerWidget {
   const PlayerScreen({super.key, required this.title});

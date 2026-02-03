@@ -1,8 +1,8 @@
 import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
-import '../providers/player_sheet_controller_provider.dart';
-import '../view_model/library_view_model.dart';
+import 'package:segue/providers/player_sheet_controller_provider.dart';
+import 'package:segue/view_model/library_view_model.dart';
 
 class LibraryScreen extends ConsumerWidget {
   const LibraryScreen({super.key});

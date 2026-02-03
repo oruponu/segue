@@ -1,8 +1,8 @@
 import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../providers/audio_handler_provider.dart';
-import '../../providers/position_provider.dart';
+import 'package:flutter/material.dart';
+import 'package:segue/providers/audio_handler_provider.dart';
+import 'package:segue/providers/position_provider.dart';
 
 class ProgressBarWidget extends ConsumerWidget {
   const ProgressBarWidget({super.key});

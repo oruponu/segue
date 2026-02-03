@@ -1,10 +1,10 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'player_screen.dart';
-import 'library_screen.dart';
-import 'widgets/mini_player.dart';
-import '../model/player_sheet_state.dart';
-import '../providers/player_sheet_controller_provider.dart';
+import 'package:flutter/material.dart';
+import 'package:segue/model/player_sheet_state.dart';
+import 'package:segue/providers/player_sheet_controller_provider.dart';
+import 'package:segue/view/library_screen.dart';
+import 'package:segue/view/player_screen.dart';
+import 'package:segue/view/widgets/mini_player.dart';
 
 class MainScreen extends ConsumerStatefulWidget {
   const MainScreen({super.key});

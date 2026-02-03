@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
-import 'providers/audio_handler_provider.dart';
-import 'view/main_screen.dart';
+import 'package:segue/providers/audio_handler_provider.dart';
+import 'package:segue/view/main_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

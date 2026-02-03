@@ -1,8 +1,8 @@
 import 'package:audio_service/audio_service.dart' hide AudioHandler;
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
-import '../../providers/audio_handler_provider.dart';
+import 'package:segue/providers/audio_handler_provider.dart';
 
 class PlaybackControls extends ConsumerWidget {
   const PlaybackControls({super.key});

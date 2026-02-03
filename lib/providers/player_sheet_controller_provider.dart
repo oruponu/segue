@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../model/player_sheet_state.dart';
+import 'package:segue/model/player_sheet_state.dart';
 
 final playerSheetControllerProvider =
     NotifierProvider<PlayerSheetController, PlayerSheetState>(() {

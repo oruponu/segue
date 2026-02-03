@@ -5,8 +5,8 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
-import '../model/library_state.dart';
-import '../providers/audio_handler_provider.dart';
+import 'package:segue/model/library_state.dart';
+import 'package:segue/providers/audio_handler_provider.dart';
 
 final libraryViewModelProvider =
     NotifierProvider<LibraryViewModel, LibraryState>(() {

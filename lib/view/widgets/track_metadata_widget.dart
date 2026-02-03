@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
-import '../../view_model/player_view_model.dart';
+import 'package:segue/view_model/player_view_model.dart';
 
 class TrackMetadataWidget extends ConsumerWidget {
   const TrackMetadataWidget({super.key});

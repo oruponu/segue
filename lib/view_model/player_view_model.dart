@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../model/player_state.dart';
-import '../providers/audio_handler_provider.dart';
+import 'package:segue/model/player_state.dart';
+import 'package:segue/providers/audio_handler_provider.dart';
 
 final playerViewModelProvider = NotifierProvider<PlayerViewModel, PlayerState>(
   () {

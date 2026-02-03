@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:rxdart/rxdart.dart';
-import '../model/position_data.dart';
-import 'audio_handler_provider.dart';
+import 'package:segue/model/position_data.dart';
+import 'package:segue/providers/audio_handler_provider.dart';
 
 final positionProvider = StreamProvider<PositionData>((ref) {
   final handler = ref.watch(audioHandlerProvider);
