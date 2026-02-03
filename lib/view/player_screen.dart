@@ -6,9 +6,7 @@ import 'package:segue/view/widgets/progress_bar_widget.dart';
 import 'package:segue/view/widgets/track_metadata_widget.dart';
 
 class PlayerScreen extends ConsumerWidget {
-  const PlayerScreen({super.key, required this.title});
-
-  final String title;
+  const PlayerScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -20,7 +18,6 @@ class PlayerScreen extends ConsumerWidget {
             ref.read(playerSheetControllerProvider.notifier).collapse();
           },
         ),
-        title: Text(title),
       ),
       body: SafeArea(
         child: SizedBox(

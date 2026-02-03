@@ -84,7 +84,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                               ignoring: selection < 0.5,
                               child: Opacity(
                                 opacity: selection,
-                                child: const PlayerScreen(title: "Now Playing"),
+                                child: const PlayerScreen(),
                               ),
                             ),
                             IgnorePointer(
