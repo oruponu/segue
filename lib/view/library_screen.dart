@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
 import 'package:segue/providers/player_sheet_controller_provider.dart';
+import 'package:segue/view/widgets/playing_icon.dart';
 import 'package:segue/view_model/library_view_model.dart';
 
 class LibraryScreen extends ConsumerWidget {
@@ -36,10 +37,20 @@ class LibraryScreen extends ConsumerWidget {
                     playingMediaItem.artist == metadata.artist;
                 return ListTile(
                   leading: _buildThumbnail(metadata.artUri),
-                  title: Text(
-                    metadata.title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                  title: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          metadata.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      if (isPlaying && state.isPlaying) ...[
+                        const SizedBox(width: 8),
+                        const PlayingIcon(),
+                      ],
+                    ],
                   ),
                   subtitle: Row(
                     children: [
