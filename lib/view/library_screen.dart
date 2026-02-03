@@ -1,8 +1,8 @@
 import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
+import '../providers/player_sheet_controller_provider.dart';
 import '../view_model/library_view_model.dart';
-import 'player_screen.dart';
 
 class LibraryScreen extends ConsumerWidget {
   const LibraryScreen({super.key});
@@ -61,16 +61,7 @@ class LibraryScreen extends ConsumerWidget {
                   ),
                   onTap: () async {
                     await viewModel.playItem(index);
-                    if (context.mounted) {
-                      showModalBottomSheet(
-                        context: context,
-                        builder: (context) =>
-                            const PlayerScreen(title: "Now Playing"),
-                        backgroundColor: Colors.transparent,
-                        isScrollControlled: true,
-                        useSafeArea: true,
-                      );
-                    }
+                    ref.read(playerSheetControllerProvider.notifier).expand();
                   },
                   tileColor: isPlaying
                       ? Colors.blue.withValues(alpha: 0.1)
