@@ -22,19 +22,11 @@ class LibraryViewModel extends Notifier<LibraryState> {
       state = state.copyWith(isPlaying: isPlaying);
     });
 
-    ref.listen(mediaItemProvider, (previous, next) {
-      next.whenData((item) {
-        state = state.copyWith(playingMediaItem: item);
-      });
+    handler.mediaItem.listen((item) {
+      state = state.copyWith(playingMediaItem: item);
     });
 
-    final initialMediaItem = ref.read(mediaItemProvider);
-    return LibraryState(
-      playingMediaItem: initialMediaItem.maybeWhen(
-        orElse: () => null,
-        data: (item) => item,
-      ),
-    );
+    return LibraryState(playingMediaItem: null);
   }
 
   Future<void> selectDirectory() async {

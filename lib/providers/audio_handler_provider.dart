@@ -19,11 +19,6 @@ final audioHandlerFutureProvider = FutureProvider<AudioHandler>((ref) async {
   );
 });
 
-final mediaItemProvider = StreamProvider<MediaItem?>((ref) {
-  final handler = ref.watch(audioHandlerProvider);
-  return handler.mediaItem;
-});
-
 class AudioHandler extends BaseAudioHandler {
   final AudioPlayer _player;
 

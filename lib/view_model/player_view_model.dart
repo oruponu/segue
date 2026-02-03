@@ -11,18 +11,11 @@ final playerViewModelProvider = NotifierProvider<PlayerViewModel, PlayerState>(
 class PlayerViewModel extends Notifier<PlayerState> {
   @override
   PlayerState build() {
-    ref.listen(mediaItemProvider, (previous, next) {
-      next.whenData((item) {
-        state = state.copyWith(playingMediaItem: item);
-      });
+    final handler = ref.watch(audioHandlerProvider);
+    handler.mediaItem.listen((item) {
+      state = state.copyWith(playingMediaItem: item);
     });
 
-    final initialMediaItem = ref.read(mediaItemProvider);
-    return PlayerState(
-      playingMediaItem: initialMediaItem.maybeWhen(
-        orElse: () => null,
-        data: (item) => item,
-      ),
-    );
+    return PlayerState(playingMediaItem: null);
   }
 }
