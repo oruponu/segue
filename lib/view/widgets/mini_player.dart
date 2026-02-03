@@ -4,6 +4,7 @@ import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
 import 'package:segue/providers/audio_handler_provider.dart';
+import 'package:segue/providers/player_sheet_controller_provider.dart';
 import 'package:segue/providers/position_provider.dart';
 
 class MiniPlayer extends ConsumerWidget {
@@ -21,67 +22,72 @@ class MiniPlayer extends ConsumerWidget {
           return const SizedBox.shrink();
         }
 
-        return Container(
-          color: Theme.of(
-            context,
-          ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.95),
-          child: SafeArea(
-            top: false,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _buildProgressBar(context, ref),
-                SizedBox(
-                  height: 72,
-                  child: Row(
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: _buildArtwork(mediaItem.artUri),
-                      ),
-
-                      Expanded(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              mediaItem.title,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: Theme.of(context).textTheme.titleSmall,
-                            ),
-                            Text(
-                              mediaItem.artist ?? "Unknown Artist",
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: Theme.of(context).textTheme.bodySmall,
-                            ),
-                          ],
+        return GestureDetector(
+          onTap: () {
+            ref.read(playerSheetControllerProvider.notifier).expand();
+          },
+          child: Container(
+            color: Theme.of(
+              context,
+            ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.95),
+            child: SafeArea(
+              top: false,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _buildProgressBar(context, ref),
+                  SizedBox(
+                    height: 72,
+                    child: Row(
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: _buildArtwork(mediaItem.artUri),
                         ),
-                      ),
 
-                      StreamBuilder<PlaybackState>(
-                        stream: handler.playbackState,
-                        builder: (context, snapshot) {
-                          final playing = snapshot.data?.playing ?? false;
-                          return IconButton(
-                            onPressed: playing ? handler.pause : handler.play,
-                            icon: Icon(
-                              playing ? Icons.pause : Icons.play_arrow,
-                            ),
-                          );
-                        },
-                      ),
+                        Expanded(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                mediaItem.title,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: Theme.of(context).textTheme.titleSmall,
+                              ),
+                              Text(
+                                mediaItem.artist ?? "Unknown Artist",
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
+                            ],
+                          ),
+                        ),
 
-                      IconButton(
-                        icon: const Icon(Icons.skip_next),
-                        onPressed: handler.skipToNext,
-                      ),
-                    ],
+                        StreamBuilder<PlaybackState>(
+                          stream: handler.playbackState,
+                          builder: (context, snapshot) {
+                            final playing = snapshot.data?.playing ?? false;
+                            return IconButton(
+                              onPressed: playing ? handler.pause : handler.play,
+                              icon: Icon(
+                                playing ? Icons.pause : Icons.play_arrow,
+                              ),
+                            );
+                          },
+                        ),
+
+                        IconButton(
+                          icon: const Icon(Icons.skip_next),
+                          onPressed: handler.skipToNext,
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         );
