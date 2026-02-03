@@ -1,6 +1,8 @@
+import 'package:audio_service/audio_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
 import 'package:segue/model/player_sheet_state.dart';
+import 'package:segue/providers/audio_handler_provider.dart';
 import 'package:segue/providers/player_sheet_controller_provider.dart';
 import 'package:segue/view/library_screen.dart';
 import 'package:segue/view/player_screen.dart';
@@ -24,6 +26,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     final double minSize =
         (miniPlayerHeight + MediaQuery.of(context).padding.bottom) /
         screenHeight;
+    final handler = ref.watch(audioHandlerProvider);
 
     ref.listen<PlayerSheetState>(playerSheetControllerProvider, (
       previous,
@@ -52,7 +55,19 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          const LibraryScreen(),
+          StreamBuilder<MediaItem?>(
+            stream: handler.mediaItem,
+            builder: (context, snapshot) {
+              final showMiniPlayer = snapshot.data != null;
+              final double bottomPadding = showMiniPlayer
+                  ? miniPlayerHeight + MediaQuery.of(context).padding.bottom
+                  : 0.0;
+              return Positioned.fill(
+                bottom: bottomPadding,
+                child: const LibraryScreen(),
+              );
+            },
+          ),
 
           DraggableScrollableSheet(
             initialChildSize: minSize,
