@@ -29,7 +29,7 @@ class ProgressBarWidget extends ConsumerWidget {
             handler.seek(duration);
           },
         ),
-        error: (_, __) => const SizedBox(),
+        error: (_, _) => const SizedBox(),
         loading: () =>
             const ProgressBar(progress: Duration.zero, total: Duration.zero),
       ),
