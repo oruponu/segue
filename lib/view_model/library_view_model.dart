@@ -16,6 +16,12 @@ final libraryViewModelProvider =
 class LibraryViewModel extends Notifier<LibraryState> {
   @override
   LibraryState build() {
+    final handler = ref.watch(audioHandlerProvider);
+    handler.playerStateStream.listen((playerState) {
+      final isPlaying = playerState.playing;
+      state = state.copyWith(isPlaying: isPlaying);
+    });
+
     ref.listen(mediaItemProvider, (previous, next) {
       next.whenData((item) {
         state = state.copyWith(playingMediaItem: item);
