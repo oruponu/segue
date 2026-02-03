@@ -20,6 +20,12 @@ class _MainScreenState extends ConsumerState<MainScreen> {
       DraggableScrollableController();
 
   @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     const double miniPlayerHeight = 72.0;
     final double screenHeight = MediaQuery.of(context).size.height;
