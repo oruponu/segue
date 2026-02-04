@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
 import 'package:segue/view_model/player_view_model.dart';
+import 'package:segue/view/widgets/auto_scroll_text.dart';
 
 class TrackMetadataWidget extends ConsumerWidget {
   const TrackMetadataWidget({super.key});
@@ -11,38 +12,44 @@ class TrackMetadataWidget extends ConsumerWidget {
     final state = ref.watch(playerViewModelProvider);
     final mediaItem = state.playingMediaItem;
 
-    return Column(
-      children: [
-        Container(
-          width: 250,
-          height: 250,
-          decoration: BoxDecoration(
-            color: Colors.grey[800],
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: const [
-              BoxShadow(
-                color: Colors.black45,
-                blurRadius: 10,
-                offset: Offset(0, 5),
-              ),
-            ],
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Column(
+        children: [
+          Container(
+            width: 250,
+            height: 250,
+            decoration: BoxDecoration(
+              color: Colors.grey[800],
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: const [
+                BoxShadow(
+                  color: Colors.black45,
+                  offset: Offset(0, 5),
+                  blurRadius: 10,
+                ),
+              ],
+            ),
+            child: _buildThumbnail(mediaItem?.artUri),
           ),
-
-          child: _buildThumbnail(mediaItem?.artUri),
-        ),
-        const SizedBox(height: 30),
-        Text(
-          mediaItem?.title ?? "Unknown Title",
-          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 8),
-        Text(
-          mediaItem?.artist ?? "Unknown Artist",
-          style: const TextStyle(fontSize: 18, color: Colors.white70),
-          textAlign: TextAlign.center,
-        ),
-      ],
+          const SizedBox(height: 30),
+          SizedBox(
+            height: 36,
+            child: AutoScrollText(
+              text: mediaItem?.title ?? "Unknown Title",
+              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            ),
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            height: 24,
+            child: AutoScrollText(
+              text: mediaItem?.artist ?? "Unknown Artist",
+              style: const TextStyle(fontSize: 18, color: Colors.white70),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
