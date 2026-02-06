@@ -3,6 +3,7 @@ import 'package:audio_metadata_reader/audio_metadata_reader.dart';
 import 'package:audio_service/audio_service.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:just_waveform/just_waveform.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:segue/model/library_state.dart';
@@ -86,6 +87,16 @@ class LibraryViewModel extends Notifier<LibraryState> {
         artUri = Uri.file(artFile.path);
       }
 
+      final waveFile = File(
+        '${tempDir.path}/${metadata.file.path.hashCode}.wave',
+      );
+      if (!await waveFile.exists()) {
+        JustWaveform.extract(
+          audioInFile: metadata.file,
+          waveOutFile: waveFile,
+        ).drain();
+      }
+
       mediaItems.add(
         MediaItem(
           id: metadata.file.path,
@@ -94,6 +105,7 @@ class LibraryViewModel extends Notifier<LibraryState> {
           artist: metadata.artist,
           duration: metadata.duration,
           artUri: artUri,
+          extras: {'wavePath': waveFile.path},
         ),
       );
     }
