@@ -1,10 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
 import 'package:segue/providers/audio_handler_provider.dart';
+import 'package:segue/src/rust/frb_generated.dart';
 import 'package:segue/view/main_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await RustLib.init();
 
   final container = ProviderContainer();
   await container.read(audioHandlerFutureProvider.future);
