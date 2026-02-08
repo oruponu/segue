@@ -2,6 +2,7 @@ use std::fs::File;
 use std::path::Path;
 
 use anyhow::Context;
+use stratum_dsp::{AnalysisConfig, Key};
 use symphonia::core::audio::{Channels, SampleBuffer};
 use symphonia::core::codecs::DecoderOptions;
 use symphonia::core::errors::Error as SymphoniaError;
@@ -10,15 +11,36 @@ use symphonia::core::io::MediaSourceStream;
 use symphonia::core::meta::MetadataOptions;
 use symphonia::core::probe::Hint;
 
-pub struct AudioData {
-    pub samples: Vec<f32>,
-    pub sample_rate: u32,
+pub struct AnalysisResult {
+    pub bpm: f32,
+    pub bpm_confidence: f32,
+    pub key: String,
+    pub key_confidence: f32,
 }
 
-pub fn decode_audio(path_str: String) -> anyhow::Result<AudioData> {
+struct AudioData {
+    samples: Vec<f32>,
+    sample_rate: u32,
+}
+
+pub fn analyze(path_str: String) -> anyhow::Result<AnalysisResult> {
     let path = Path::new(&path_str);
-    let file =
-        File::open(path).with_context(|| format!("failed to open audio file: {}", path_str))?;
+    let audio = decode_audio(path)
+        .with_context(|| format!("failed to decode audio: {}", path.display()))?;
+    let result =
+        stratum_dsp::analyze_audio(&audio.samples, audio.sample_rate, AnalysisConfig::default())
+            .with_context(|| format!("failed to analyze audio: {}", path.display()))?;
+    Ok(AnalysisResult {
+        bpm: result.bpm,
+        bpm_confidence: result.bpm_confidence,
+        key: key_to_string(result.key),
+        key_confidence: result.key_confidence,
+    })
+}
+
+fn decode_audio(path: &Path) -> anyhow::Result<AudioData> {
+    let file = File::open(path)
+        .with_context(|| format!("failed to open audio file: {}", path.display()))?;
     let source = MediaSourceStream::new(Box::new(file), Default::default());
 
     let mut hint = Hint::new();
@@ -33,16 +55,16 @@ pub fn decode_audio(path_str: String) -> anyhow::Result<AudioData> {
             &FormatOptions::default(),
             &MetadataOptions::default(),
         )
-        .with_context(|| format!("failed to probe audio format: {}", path_str))?;
+        .with_context(|| format!("failed to probe audio format: {}", path.display()))?;
     let mut reader = probe_result.format;
 
     let track = reader
         .default_track()
-        .ok_or_else(|| anyhow::anyhow!("no supported audio track found: '{}'", path_str))?;
+        .ok_or_else(|| anyhow::anyhow!("no supported audio track found: '{}'", path.display()))?;
     let sample_rate = track
         .codec_params
         .sample_rate
-        .ok_or_else(|| anyhow::anyhow!("missing sample rate: '{}'", path_str))?;
+        .ok_or_else(|| anyhow::anyhow!("missing sample rate: '{}'", path.display()))?;
     let channel_count = track
         .codec_params
         .channels
@@ -85,4 +107,16 @@ pub fn decode_audio(path_str: String) -> anyhow::Result<AudioData> {
         samples: all_samples,
         sample_rate,
     })
+}
+
+fn key_to_string(key: stratum_dsp::Key) -> String {
+    const NOTE_NAMES: [&str; 12] = [
+        "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B",
+    ];
+    let (note_index, mode_str) = match key {
+        Key::Major(n) => (n as usize, "Major"),
+        Key::Minor(n) => (n as usize, "Minor"),
+    };
+    let note_name = NOTE_NAMES.get(note_index).copied().unwrap_or("Unknown");
+    format!("{} {}", note_name, mode_str)
 }
