@@ -76,25 +76,26 @@ fn decode_audio(path: &Path, generation: u64) -> anyhow::Result<Option<AudioData
             &MetadataOptions::default(),
         )
         .with_context(|| format!("failed to probe audio format: {}", path.display()))?;
-    let mut reader = probed.format;
 
+    let mut reader = probed.format;
     let track = reader
         .default_track()
         .ok_or_else(|| anyhow::anyhow!("no supported audio track found: '{}'", path.display()))?;
-    let sample_rate = track
-        .codec_params
+
+    let track_id = track.id;
+    let codec_params = &track.codec_params;
+    let sample_rate = codec_params
         .sample_rate
         .ok_or_else(|| anyhow::anyhow!("missing sample rate: '{}'", path.display()))?;
-    let channel_count = track
-        .codec_params
+
+    let channel_count = codec_params
         .channels
         .map(|ch: Channels| ch.count())
         .unwrap_or(1);
-    let n_frames = track.codec_params.n_frames;
-    let track_id = track.id;
+    let n_frames = codec_params.n_frames;
 
     let mut decoder = symphonia::default::get_codecs()
-        .make(&track.codec_params, &DecoderOptions::default())
+        .make(codec_params, &DecoderOptions::default())
         .with_context(|| "failed to create decoder")?;
 
     let downsample_factor = (sample_rate / 22050).max(1) as usize;
@@ -116,6 +117,7 @@ fn decode_audio(path: &Path, generation: u64) -> anyhow::Result<Option<AudioData
             Err(SymphoniaError::IoError(_)) => break,
             Err(e) => return Err(e.into()),
         };
+
         if packet.track_id() != track_id {
             continue;
         }
@@ -134,14 +136,14 @@ fn decode_audio(path: &Path, generation: u64) -> anyhow::Result<Option<AudioData
         let interleaved = buf.samples();
 
         if channel_count == 1 {
-            for sample in interleaved.iter().step_by(downsample_factor) {
-                samples.push(*sample);
-            }
+            samples.extend(interleaved.iter().step_by(downsample_factor).copied());
         } else {
-            for frame in interleaved.chunks(channel_count).step_by(downsample_factor) {
-                let mono = frame.iter().sum::<f32>() / channel_count as f32;
-                samples.push(mono);
-            }
+            samples.extend(
+                interleaved
+                    .chunks(channel_count)
+                    .step_by(downsample_factor)
+                    .map(|frame| frame.iter().sum::<f32>() / channel_count as f32),
+            );
         }
     }
 
