@@ -154,13 +154,18 @@ fn decode_audio(path: &Path, generation: u64) -> anyhow::Result<Option<AudioData
 }
 
 fn key_to_string(key: stratum_dsp::Key) -> String {
-    const NOTE_NAMES: [&str; 12] = [
-        "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B",
+    const MAJOR_NAMES: [&str; 12] = [
+        "C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B",
     ];
-    let (note_index, mode_str) = match key {
-        Key::Major(n) => (n as usize, "Major"),
-        Key::Minor(n) => (n as usize, "Minor"),
+    const MINOR_NAMES: [&str; 12] = [
+        "C", "C#", "D", "Eb", "E", "F", "F#", "G", "G#", "A", "Bb", "B",
+    ];
+
+    let (note_index, mode_str, names) = match key {
+        Key::Major(n) => (n as usize, "Major", &MAJOR_NAMES),
+        Key::Minor(n) => (n as usize, "Minor", &MINOR_NAMES),
     };
-    let note_name = NOTE_NAMES.get(note_index).copied().unwrap_or("Unknown");
-    format!("{} {}", note_name, mode_str)
+
+    let note_name = names.get(note_index).copied().unwrap_or("Unknown");
+    format!("{note_name} {mode_str}")
 }
