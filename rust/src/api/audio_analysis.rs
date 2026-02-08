@@ -90,12 +90,14 @@ fn decode_audio(path: &Path, generation: u64) -> anyhow::Result<Option<AudioData
         .channels
         .map(|ch: Channels| ch.count())
         .unwrap_or(1);
+    let n_frames = track.codec_params.n_frames;
     let track_id = track.id;
 
     let mut decoder = symphonia::default::get_codecs()
         .make(&track.codec_params, &DecoderOptions::default())
         .with_context(|| "failed to create decoder")?;
-    let mut all_samples: Vec<f32> = Vec::new();
+    let capacity = n_frames.map(|n| n as usize).unwrap_or(0);
+    let mut all_samples: Vec<f32> = Vec::with_capacity(capacity);
     let mut sample_buf: Option<SampleBuffer<f32>> = None;
 
     loop {
