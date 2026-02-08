@@ -31,10 +31,16 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   AnalysisResult dco_decode_analysis_result(dynamic raw);
 
   @protected
+  AnalysisResult dco_decode_box_autoadd_analysis_result(dynamic raw);
+
+  @protected
   double dco_decode_f_32(dynamic raw);
 
   @protected
   Uint8List dco_decode_list_prim_u_8_strict(dynamic raw);
+
+  @protected
+  AnalysisResult? dco_decode_opt_box_autoadd_analysis_result(dynamic raw);
 
   @protected
   int dco_decode_u_8(dynamic raw);
@@ -52,10 +58,20 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   AnalysisResult sse_decode_analysis_result(SseDeserializer deserializer);
 
   @protected
+  AnalysisResult sse_decode_box_autoadd_analysis_result(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   double sse_decode_f_32(SseDeserializer deserializer);
 
   @protected
   Uint8List sse_decode_list_prim_u_8_strict(SseDeserializer deserializer);
+
+  @protected
+  AnalysisResult? sse_decode_opt_box_autoadd_analysis_result(
+    SseDeserializer deserializer,
+  );
 
   @protected
   int sse_decode_u_8(SseDeserializer deserializer);
@@ -85,11 +101,23 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  void sse_encode_box_autoadd_analysis_result(
+    AnalysisResult self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_f_32(double self, SseSerializer serializer);
 
   @protected
   void sse_encode_list_prim_u_8_strict(
     Uint8List self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_opt_box_autoadd_analysis_result(
+    AnalysisResult? self,
     SseSerializer serializer,
   );
 

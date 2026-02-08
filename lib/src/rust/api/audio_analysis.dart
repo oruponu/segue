@@ -9,8 +9,11 @@ import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 // These functions are ignored because they are not marked as `pub`: `decode_audio`, `key_to_string`
 // These types are ignored because they are neither used by any `pub` functions nor (for structs and enums) marked `#[frb(unignore)]`: `AudioData`
 
-Future<AnalysisResult> analyze({required String pathStr}) =>
+Future<AnalysisResult?> analyze({required String pathStr}) =>
     RustLib.instance.api.crateApiAudioAnalysisAnalyze(pathStr: pathStr);
+
+Future<void> cancelAnalyze() =>
+    RustLib.instance.api.crateApiAudioAnalysisCancelAnalyze();
 
 class AnalysisResult {
   final double bpm;
