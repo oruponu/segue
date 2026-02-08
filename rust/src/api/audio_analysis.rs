@@ -96,7 +96,13 @@ fn decode_audio(path: &Path, generation: u64) -> anyhow::Result<Option<AudioData
     let mut decoder = symphonia::default::get_codecs()
         .make(&track.codec_params, &DecoderOptions::default())
         .with_context(|| "failed to create decoder")?;
-    let capacity = n_frames.map(|n| n as usize).unwrap_or(0);
+
+    let downsample_factor = (sample_rate / 22050).max(1) as usize;
+    let target_sample_rate = sample_rate / downsample_factor as u32;
+
+    let capacity = n_frames
+        .map(|n| n as usize / downsample_factor)
+        .unwrap_or(0);
     let mut all_samples: Vec<f32> = Vec::with_capacity(capacity);
     let mut sample_buf: Option<SampleBuffer<f32>> = None;
 
@@ -128,9 +134,11 @@ fn decode_audio(path: &Path, generation: u64) -> anyhow::Result<Option<AudioData
         let raw_samples = buf.samples();
 
         if channel_count == 1 {
-            all_samples.extend_from_slice(raw_samples);
+            for sample in raw_samples.iter().step_by(downsample_factor) {
+                all_samples.push(*sample);
+            }
         } else {
-            for frame in raw_samples.chunks(channel_count) {
+            for frame in raw_samples.chunks(channel_count).step_by(downsample_factor) {
                 let mono = frame.iter().sum::<f32>() / channel_count as f32;
                 all_samples.push(mono);
             }
@@ -139,7 +147,7 @@ fn decode_audio(path: &Path, generation: u64) -> anyhow::Result<Option<AudioData
 
     Ok(Some(AudioData {
         samples: all_samples,
-        sample_rate,
+        sample_rate: target_sample_rate,
     }))
 }
 
