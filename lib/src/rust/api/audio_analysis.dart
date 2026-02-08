@@ -6,23 +6,39 @@
 import '../frb_generated.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
-Future<AudioData> decodeAudio({required String pathStr}) =>
-    RustLib.instance.api.crateApiAudioAnalysisDecodeAudio(pathStr: pathStr);
+// These functions are ignored because they are not marked as `pub`: `decode_audio`, `key_to_string`
+// These types are ignored because they are neither used by any `pub` functions nor (for structs and enums) marked `#[frb(unignore)]`: `AudioData`
 
-class AudioData {
-  final Float32List samples;
-  final int sampleRate;
+Future<AnalysisResult> analyze({required String pathStr}) =>
+    RustLib.instance.api.crateApiAudioAnalysisAnalyze(pathStr: pathStr);
 
-  const AudioData({required this.samples, required this.sampleRate});
+class AnalysisResult {
+  final double bpm;
+  final double bpmConfidence;
+  final String key;
+  final double keyConfidence;
+
+  const AnalysisResult({
+    required this.bpm,
+    required this.bpmConfidence,
+    required this.key,
+    required this.keyConfidence,
+  });
 
   @override
-  int get hashCode => samples.hashCode ^ sampleRate.hashCode;
+  int get hashCode =>
+      bpm.hashCode ^
+      bpmConfidence.hashCode ^
+      key.hashCode ^
+      keyConfidence.hashCode;
 
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is AudioData &&
+      other is AnalysisResult &&
           runtimeType == other.runtimeType &&
-          samples == other.samples &&
-          sampleRate == other.sampleRate;
+          bpm == other.bpm &&
+          bpmConfidence == other.bpmConfidence &&
+          key == other.key &&
+          keyConfidence == other.keyConfidence;
 }

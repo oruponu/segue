@@ -67,7 +67,7 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
   String get codegenVersion => '2.11.1';
 
   @override
-  int get rustContentHash => 1659749355;
+  int get rustContentHash => -383953515;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
@@ -78,7 +78,9 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
 }
 
 abstract class RustLibApi extends BaseApi {
-  Future<AudioData> crateApiAudioAnalysisDecodeAudio({required String pathStr});
+  Future<AnalysisResult> crateApiAudioAnalysisAnalyze({
+    required String pathStr,
+  });
 
   String crateApiSimpleGreet({required String name});
 
@@ -94,7 +96,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   });
 
   @override
-  Future<AudioData> crateApiAudioAnalysisDecodeAudio({
+  Future<AnalysisResult> crateApiAudioAnalysisAnalyze({
     required String pathStr,
   }) {
     return handler.executeNormal(
@@ -110,18 +112,18 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           );
         },
         codec: SseCodec(
-          decodeSuccessData: sse_decode_audio_data,
+          decodeSuccessData: sse_decode_analysis_result,
           decodeErrorData: sse_decode_AnyhowException,
         ),
-        constMeta: kCrateApiAudioAnalysisDecodeAudioConstMeta,
+        constMeta: kCrateApiAudioAnalysisAnalyzeConstMeta,
         argValues: [pathStr],
         apiImpl: this,
       ),
     );
   }
 
-  TaskConstMeta get kCrateApiAudioAnalysisDecodeAudioConstMeta =>
-      const TaskConstMeta(debugName: "decode_audio", argNames: ["pathStr"]);
+  TaskConstMeta get kCrateApiAudioAnalysisAnalyzeConstMeta =>
+      const TaskConstMeta(debugName: "analyze", argNames: ["pathStr"]);
 
   @override
   String crateApiSimpleGreet({required String name}) {
@@ -186,14 +188,16 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
-  AudioData dco_decode_audio_data(dynamic raw) {
+  AnalysisResult dco_decode_analysis_result(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 2)
-      throw Exception('unexpected arr length: expect 2 but see ${arr.length}');
-    return AudioData(
-      samples: dco_decode_list_prim_f_32_strict(arr[0]),
-      sampleRate: dco_decode_u_32(arr[1]),
+    if (arr.length != 4)
+      throw Exception('unexpected arr length: expect 4 but see ${arr.length}');
+    return AnalysisResult(
+      bpm: dco_decode_f_32(arr[0]),
+      bpmConfidence: dco_decode_f_32(arr[1]),
+      key: dco_decode_String(arr[2]),
+      keyConfidence: dco_decode_f_32(arr[3]),
     );
   }
 
@@ -204,21 +208,9 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
-  Float32List dco_decode_list_prim_f_32_strict(dynamic raw) {
-    // Codec=Dco (DartCObject based), see doc to use other codecs
-    return raw as Float32List;
-  }
-
-  @protected
   Uint8List dco_decode_list_prim_u_8_strict(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return raw as Uint8List;
-  }
-
-  @protected
-  int dco_decode_u_32(dynamic raw) {
-    // Codec=Dco (DartCObject based), see doc to use other codecs
-    return raw as int;
   }
 
   @protected
@@ -248,11 +240,18 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
-  AudioData sse_decode_audio_data(SseDeserializer deserializer) {
+  AnalysisResult sse_decode_analysis_result(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
-    var var_samples = sse_decode_list_prim_f_32_strict(deserializer);
-    var var_sampleRate = sse_decode_u_32(deserializer);
-    return AudioData(samples: var_samples, sampleRate: var_sampleRate);
+    var var_bpm = sse_decode_f_32(deserializer);
+    var var_bpmConfidence = sse_decode_f_32(deserializer);
+    var var_key = sse_decode_String(deserializer);
+    var var_keyConfidence = sse_decode_f_32(deserializer);
+    return AnalysisResult(
+      bpm: var_bpm,
+      bpmConfidence: var_bpmConfidence,
+      key: var_key,
+      keyConfidence: var_keyConfidence,
+    );
   }
 
   @protected
@@ -262,23 +261,10 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
-  Float32List sse_decode_list_prim_f_32_strict(SseDeserializer deserializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    var len_ = sse_decode_i_32(deserializer);
-    return deserializer.buffer.getFloat32List(len_);
-  }
-
-  @protected
   Uint8List sse_decode_list_prim_u_8_strict(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     var len_ = sse_decode_i_32(deserializer);
     return deserializer.buffer.getUint8List(len_);
-  }
-
-  @protected
-  int sse_decode_u_32(SseDeserializer deserializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    return deserializer.buffer.getUint32();
   }
 
   @protected
@@ -320,26 +306,21 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
-  void sse_encode_audio_data(AudioData self, SseSerializer serializer) {
+  void sse_encode_analysis_result(
+    AnalysisResult self,
+    SseSerializer serializer,
+  ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
-    sse_encode_list_prim_f_32_strict(self.samples, serializer);
-    sse_encode_u_32(self.sampleRate, serializer);
+    sse_encode_f_32(self.bpm, serializer);
+    sse_encode_f_32(self.bpmConfidence, serializer);
+    sse_encode_String(self.key, serializer);
+    sse_encode_f_32(self.keyConfidence, serializer);
   }
 
   @protected
   void sse_encode_f_32(double self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     serializer.buffer.putFloat32(self);
-  }
-
-  @protected
-  void sse_encode_list_prim_f_32_strict(
-    Float32List self,
-    SseSerializer serializer,
-  ) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    sse_encode_i_32(self.length, serializer);
-    serializer.buffer.putFloat32List(self);
   }
 
   @protected
@@ -350,12 +331,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_i_32(self.length, serializer);
     serializer.buffer.putUint8List(self);
-  }
-
-  @protected
-  void sse_encode_u_32(int self, SseSerializer serializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    serializer.buffer.putUint32(self);
   }
 
   @protected
