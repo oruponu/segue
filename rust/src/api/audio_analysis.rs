@@ -68,7 +68,7 @@ fn decode_audio(path: &Path, generation: u64) -> anyhow::Result<Option<AudioData
         hint.with_extension(extension);
     }
 
-    let probe_result = symphonia::default::get_probe()
+    let probed = symphonia::default::get_probe()
         .format(
             &hint,
             source,
@@ -76,7 +76,7 @@ fn decode_audio(path: &Path, generation: u64) -> anyhow::Result<Option<AudioData
             &MetadataOptions::default(),
         )
         .with_context(|| format!("failed to probe audio format: {}", path.display()))?;
-    let mut reader = probe_result.format;
+    let mut reader = probed.format;
 
     let track = reader
         .default_track()
@@ -103,7 +103,7 @@ fn decode_audio(path: &Path, generation: u64) -> anyhow::Result<Option<AudioData
     let capacity = n_frames
         .map(|n| n as usize / downsample_factor)
         .unwrap_or(0);
-    let mut all_samples: Vec<f32> = Vec::with_capacity(capacity);
+    let mut samples: Vec<f32> = Vec::with_capacity(capacity);
     let mut sample_buf: Option<SampleBuffer<f32>> = None;
 
     loop {
@@ -120,33 +120,33 @@ fn decode_audio(path: &Path, generation: u64) -> anyhow::Result<Option<AudioData
             continue;
         }
 
-        let audio_frames = match decoder.decode(&packet) {
-            Ok(frames) => frames,
+        let decoded = match decoder.decode(&packet) {
+            Ok(decoded) => decoded,
             Err(SymphoniaError::DecodeError(_)) => continue,
             Err(e) => return Err(e).context("failed to decode packet"),
         };
 
-        let spec = *audio_frames.spec();
+        let spec = *decoded.spec();
         let buf = sample_buf
-            .get_or_insert_with(|| SampleBuffer::<f32>::new(audio_frames.capacity() as u64, spec));
-        buf.copy_interleaved_ref(audio_frames);
+            .get_or_insert_with(|| SampleBuffer::<f32>::new(decoded.capacity() as u64, spec));
+        buf.copy_interleaved_ref(decoded);
 
-        let raw_samples = buf.samples();
+        let interleaved = buf.samples();
 
         if channel_count == 1 {
-            for sample in raw_samples.iter().step_by(downsample_factor) {
-                all_samples.push(*sample);
+            for sample in interleaved.iter().step_by(downsample_factor) {
+                samples.push(*sample);
             }
         } else {
-            for frame in raw_samples.chunks(channel_count).step_by(downsample_factor) {
+            for frame in interleaved.chunks(channel_count).step_by(downsample_factor) {
                 let mono = frame.iter().sum::<f32>() / channel_count as f32;
-                all_samples.push(mono);
+                samples.push(mono);
             }
         }
     }
 
     Ok(Some(AudioData {
-        samples: all_samples,
+        samples,
         sample_rate: target_sample_rate,
     }))
 }
