@@ -9,6 +9,7 @@ crate-type = ["cdylib", "staticlib"]
 [dependencies]
 anyhow = "1.0.101"
 flutter_rust_bridge = "=2.11.1"
+stratum-dsp = "1.0.0"
 symphonia = { version = "0.5.5", features = ["all"] }
 
 [lints.rust]
