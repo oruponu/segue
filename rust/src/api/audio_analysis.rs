@@ -111,7 +111,11 @@ fn decode_audio(path: &Path, generation: u64) -> anyhow::Result<Option<AudioData
             continue;
         }
 
-        let audio_frames = decoder.decode(&packet).context("failed to decode packet")?;
+        let audio_frames = match decoder.decode(&packet) {
+            Ok(frames) => frames,
+            Err(SymphoniaError::DecodeError(_)) => continue,
+            Err(e) => return Err(e).context("failed to decode packet"),
+        };
         let spec = *audio_frames.spec();
         let mut sample_buf = SampleBuffer::<f32>::new(audio_frames.capacity() as u64, spec);
         sample_buf.copy_interleaved_ref(audio_frames);
