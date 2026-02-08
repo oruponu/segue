@@ -1,5 +1,6 @@
 use std::fs::File;
 use std::path::Path;
+use std::sync::atomic::{AtomicU64, Ordering};
 
 use anyhow::Context;
 use stratum_dsp::{AnalysisConfig, Key};
@@ -10,6 +11,8 @@ use symphonia::core::formats::FormatOptions;
 use symphonia::core::io::MediaSourceStream;
 use symphonia::core::meta::MetadataOptions;
 use symphonia::core::probe::Hint;
+
+static ANALYZE_GENERATION: AtomicU64 = AtomicU64::new(0);
 
 pub struct AnalysisResult {
     pub bpm: f32,
@@ -23,22 +26,39 @@ struct AudioData {
     sample_rate: u32,
 }
 
-pub fn analyze(path_str: String) -> anyhow::Result<AnalysisResult> {
+pub fn analyze(path_str: String) -> anyhow::Result<Option<AnalysisResult>> {
+    let generation = ANALYZE_GENERATION.fetch_add(1, Ordering::SeqCst) + 1;
     let path = Path::new(&path_str);
-    let audio = decode_audio(path)
-        .with_context(|| format!("failed to decode audio: {}", path.display()))?;
+    let audio = match decode_audio(path, generation)
+        .with_context(|| format!("failed to decode audio: {}", path.display()))?
+    {
+        Some(audio) => audio,
+        None => return Ok(None),
+    };
+    if ANALYZE_GENERATION.load(Ordering::SeqCst) != generation {
+        return Ok(None);
+    }
+
     let result =
         stratum_dsp::analyze_audio(&audio.samples, audio.sample_rate, AnalysisConfig::default())
             .with_context(|| format!("failed to analyze audio: {}", path.display()))?;
-    Ok(AnalysisResult {
+    if ANALYZE_GENERATION.load(Ordering::SeqCst) != generation {
+        return Ok(None);
+    }
+
+    Ok(Some(AnalysisResult {
         bpm: result.bpm,
         bpm_confidence: result.bpm_confidence,
         key: key_to_string(result.key),
         key_confidence: result.key_confidence,
-    })
+    }))
 }
 
-fn decode_audio(path: &Path) -> anyhow::Result<AudioData> {
+pub fn cancel_analyze() {
+    ANALYZE_GENERATION.fetch_add(1, Ordering::SeqCst);
+}
+
+fn decode_audio(path: &Path, generation: u64) -> anyhow::Result<Option<AudioData>> {
     let file = File::open(path)
         .with_context(|| format!("failed to open audio file: {}", path.display()))?;
     let source = MediaSourceStream::new(Box::new(file), Default::default());
@@ -78,6 +98,10 @@ fn decode_audio(path: &Path) -> anyhow::Result<AudioData> {
     let mut all_samples: Vec<f32> = Vec::new();
 
     loop {
+        if ANALYZE_GENERATION.load(Ordering::SeqCst) != generation {
+            return Ok(None);
+        }
+
         let packet = match reader.next_packet() {
             Ok(packet) => packet,
             Err(SymphoniaError::IoError(_)) => break,
@@ -103,10 +127,10 @@ fn decode_audio(path: &Path) -> anyhow::Result<AudioData> {
         }
     }
 
-    Ok(AudioData {
+    Ok(Some(AudioData {
         samples: all_samples,
         sample_rate,
-    })
+    }))
 }
 
 fn key_to_string(key: stratum_dsp::Key) -> String {
