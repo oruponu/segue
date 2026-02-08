@@ -96,6 +96,7 @@ fn decode_audio(path: &Path, generation: u64) -> anyhow::Result<Option<AudioData
         .make(&track.codec_params, &DecoderOptions::default())
         .with_context(|| "failed to create decoder")?;
     let mut all_samples: Vec<f32> = Vec::new();
+    let mut sample_buf: Option<SampleBuffer<f32>> = None;
 
     loop {
         if ANALYZE_GENERATION.load(Ordering::SeqCst) != generation {
@@ -116,10 +117,13 @@ fn decode_audio(path: &Path, generation: u64) -> anyhow::Result<Option<AudioData
             Err(SymphoniaError::DecodeError(_)) => continue,
             Err(e) => return Err(e).context("failed to decode packet"),
         };
+
         let spec = *audio_frames.spec();
-        let mut sample_buf = SampleBuffer::<f32>::new(audio_frames.capacity() as u64, spec);
-        sample_buf.copy_interleaved_ref(audio_frames);
-        let raw_samples = sample_buf.samples();
+        let buf = sample_buf
+            .get_or_insert_with(|| SampleBuffer::<f32>::new(audio_frames.capacity() as u64, spec));
+        buf.copy_interleaved_ref(audio_frames);
+
+        let raw_samples = buf.samples();
 
         if channel_count == 1 {
             all_samples.extend_from_slice(raw_samples);
