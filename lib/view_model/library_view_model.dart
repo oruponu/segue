@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:just_waveform/just_waveform.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:segue/model/album.dart';
 import 'package:segue/model/library_state.dart';
 import 'package:segue/providers/audio_handler_provider.dart';
 
@@ -38,21 +39,73 @@ class LibraryViewModel extends Notifier<LibraryState> {
 
     state = state.copyWith(
       selectedDirectory: selectedDirectory,
+      clearSelectedAlbum: true,
       isLoading: true,
     );
     await _loadAudioSources(selectedDirectory);
     state = state.copyWith(isLoading: false);
   }
 
+  void selectAlbum(Album album) {
+    state = state.copyWith(selectedAlbum: album);
+  }
+
+  void goBackToAlbums() {
+    state = state.copyWith(clearSelectedAlbum: true);
+  }
+
   Future<void> playItem(int index) async {
     final handler = ref.read(audioHandlerProvider);
+    final album = state.selectedAlbum;
+    if (album != null) {
+      await handler.updateQueue(album.tracks);
+    }
     await handler.skipToQueueItem(index);
     handler.play();
   }
 
-  Future<void> _loadAudioSources(String path) async {
-    final handler = ref.read(audioHandlerProvider);
+  List<Album> _groupByAlbum(List<MediaItem> items) {
+    final map = <String, List<MediaItem>>{};
+    for (final item in items) {
+      final albumName = item.album ?? 'Unknown Album';
+      map.putIfAbsent(albumName, () => []).add(item);
+    }
 
+    for (final tracks in map.values) {
+      tracks.sort((a, b) {
+        final aNum = a.extras?['trackNumber'] as int?;
+        final bNum = b.extras?['trackNumber'] as int?;
+        if (aNum != null || bNum != null) {
+          return (aNum ?? 0).compareTo(bNum ?? 0);
+        }
+        return a.id.compareTo(b.id);
+      });
+    }
+
+    final albums = map.entries.map((entry) {
+      final tracks = entry.value;
+      final artUri = tracks
+          .cast<MediaItem?>()
+          .firstWhere((track) => track!.artUri != null, orElse: () => null)
+          ?.artUri;
+      return Album(
+        name: entry.key,
+        artist: tracks.first.artist,
+        artUri: artUri,
+        tracks: tracks,
+      );
+    }).toList();
+
+    albums.sort((a, b) {
+      if (a.name == 'Unknown Album') return 1;
+      if (b.name == 'Unknown Album') return -1;
+      return a.name.compareTo(b.name);
+    });
+
+    return albums;
+  }
+
+  Future<void> _loadAudioSources(String path) async {
     var audioStatus = await Permission.audio.status;
     if (!audioStatus.isGranted) {
       audioStatus = await Permission.audio.request();
@@ -70,13 +123,21 @@ class LibraryViewModel extends Notifier<LibraryState> {
       return;
     }
 
-    final metadataList = directory
-        .listSync()
-        .map((file) => readMetadata(File(file.path), getImage: true))
+    final files = directory
+        .listSync(recursive: true)
+        .whereType<File>()
         .toList();
+
     final mediaItems = <MediaItem>[];
     final tempDir = await getTemporaryDirectory();
-    for (var metadata in metadataList) {
+    for (final file in files) {
+      final AudioMetadata metadata;
+      try {
+        metadata = readMetadata(file, getImage: true);
+      } catch (_) {
+        continue;
+      }
+
       Uri? artUri;
       if (metadata.pictures.isNotEmpty) {
         final picture = metadata.pictures.first;
@@ -105,12 +166,15 @@ class LibraryViewModel extends Notifier<LibraryState> {
           artist: metadata.artist,
           duration: metadata.duration,
           artUri: artUri,
-          extras: {'wavePath': waveFile.path},
+          extras: {
+            'trackNumber': metadata.trackNumber,
+            'wavePath': waveFile.path,
+          },
         ),
       );
     }
-    await handler.updateQueue(mediaItems);
 
-    state = state.copyWith(playlist: mediaItems, isLoading: false);
+    final albums = _groupByAlbum(mediaItems);
+    state = state.copyWith(playlist: mediaItems, albums: albums);
   }
 }
