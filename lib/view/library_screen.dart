@@ -33,12 +33,73 @@ class LibraryScreen extends ConsumerWidget {
         ],
       ),
       body: state.isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? _buildScanningView(context, ref)
           : selectedAlbum != null
           ? _buildTrackList(context, ref, selectedAlbum)
           : state.albums.isEmpty
           ? const Center(child: Text("フォルダを選択してください"))
           : _buildAlbumList(context, ref),
+    );
+  }
+
+  Widget _buildScanningView(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(libraryViewModelProvider);
+    final total = state.scanTotal;
+    final processed = state.scanProcessed;
+    final progress = total > 0 ? processed / total : null;
+
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            children: [
+              LinearProgressIndicator(value: progress),
+              const SizedBox(height: 8),
+              Text(
+                total > 0 ? 'スキャン中... $processed/$total' : 'スキャン中...',
+                style: const TextStyle(fontSize: 14, color: Colors.grey),
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: state.albums.isEmpty
+              ? const SizedBox.shrink()
+              : ListView.builder(
+                  itemCount: state.albums.length,
+                  itemBuilder: (context, index) {
+                    final album = state.albums[index];
+                    return ListTile(
+                      leading: _buildThumbnail(album.artUri),
+                      title: Text(
+                        album.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      subtitle: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              album.artist ?? "Unknown Artist",
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          Text(
+                            '${album.trackCount}曲',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+        ),
+      ],
     );
   }
 
