@@ -9,4 +9,9 @@ class Album {
   Album({required this.name, this.artist, this.artUri, required this.tracks});
 
   int get trackCount => tracks.length;
+
+  Duration get totalDuration => tracks.fold(
+    Duration.zero,
+    (sum, track) => sum + (track.duration ?? Duration.zero),
+  );
 }
