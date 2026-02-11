@@ -155,10 +155,14 @@ class LibraryViewModel extends Notifier<LibraryState> {
         '${tempDir.path}/${metadata.file.path.hashCode}.wave',
       );
       if (!await waveFile.exists()) {
-        JustWaveform.extract(
-          audioInFile: metadata.file,
-          waveOutFile: waveFile,
-        ).drain();
+        try {
+          await JustWaveform.extract(
+            audioInFile: metadata.file,
+            waveOutFile: waveFile,
+          ).drain();
+        } catch (_) {
+          // デコード非対応フォーマットはスキップ
+        }
       }
 
       mediaItems.add(
