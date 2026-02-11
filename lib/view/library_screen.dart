@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
+import 'package:segue/model/album.dart';
 import 'package:segue/providers/player_sheet_controller_provider.dart';
 import 'package:segue/view/widgets/playing_icon.dart';
 import 'package:segue/view_model/library_view_model.dart';
@@ -12,75 +13,117 @@ class LibraryScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(libraryViewModelProvider);
     final viewModel = ref.read(libraryViewModelProvider.notifier);
-    final playingMediaItem = state.playingMediaItem;
+    final selectedAlbum = state.selectedAlbum;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("ライブラリ"),
+        leading: selectedAlbum != null
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: viewModel.goBackToAlbums,
+              )
+            : null,
+        title: Text(selectedAlbum?.name ?? "ライブラリ"),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.folder_open),
-            onPressed: viewModel.selectDirectory,
-          ),
+          if (selectedAlbum == null)
+            IconButton(
+              icon: const Icon(Icons.folder_open),
+              onPressed: viewModel.selectDirectory,
+            ),
         ],
       ),
       body: state.isLoading
           ? const Center(child: CircularProgressIndicator())
-          : state.playlist.isEmpty
+          : selectedAlbum != null
+          ? _buildTrackList(context, ref, selectedAlbum)
+          : state.albums.isEmpty
           ? const Center(child: Text("フォルダを選択してください"))
-          : ListView.builder(
-              itemBuilder: (context, index) {
-                final metadata = state.playlist[index];
-                final isPlaying =
-                    playingMediaItem != null &&
-                    playingMediaItem.title == metadata.title &&
-                    playingMediaItem.artist == metadata.artist;
-                return ListTile(
-                  leading: _buildThumbnail(metadata.artUri),
-                  title: Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          metadata.title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      if (isPlaying && state.isPlaying) ...[
-                        const SizedBox(width: 8),
-                        const PlayingIcon(),
-                      ],
-                    ],
-                  ),
-                  subtitle: Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          metadata.artist ?? "Unknown Artist",
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      Text(
-                        _formatDuration(metadata.duration),
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey,
-                        ),
-                      ),
-                    ],
-                  ),
-                  onTap: () async {
-                    await viewModel.playItem(index);
-                    ref.read(playerSheetControllerProvider.notifier).expand();
-                  },
-                  tileColor: isPlaying
-                      ? Colors.blue.withValues(alpha: 0.1)
-                      : null,
-                );
-              },
-              itemCount: state.playlist.length,
-            ),
+          : _buildAlbumList(context, ref),
+    );
+  }
+
+  Widget _buildAlbumList(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(libraryViewModelProvider);
+    final viewModel = ref.read(libraryViewModelProvider.notifier);
+
+    return ListView.builder(
+      itemCount: state.albums.length,
+      itemBuilder: (context, index) {
+        final album = state.albums[index];
+        return ListTile(
+          leading: _buildThumbnail(album.artUri),
+          title: Text(album.name, maxLines: 1, overflow: TextOverflow.ellipsis),
+          subtitle: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  album.artist ?? "Unknown Artist",
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              Text(
+                '${album.trackCount}曲',
+                style: const TextStyle(fontSize: 12, color: Colors.grey),
+              ),
+            ],
+          ),
+          onTap: () => viewModel.selectAlbum(album),
+        );
+      },
+    );
+  }
+
+  Widget _buildTrackList(BuildContext context, WidgetRef ref, Album album) {
+    final state = ref.watch(libraryViewModelProvider);
+    final viewModel = ref.read(libraryViewModelProvider.notifier);
+    final playingMediaItem = state.playingMediaItem;
+
+    return ListView.builder(
+      itemCount: album.tracks.length,
+      itemBuilder: (context, index) {
+        final track = album.tracks[index];
+        final isPlaying =
+            playingMediaItem != null && playingMediaItem.id == track.id;
+        return ListTile(
+          leading: _buildThumbnail(track.artUri),
+          title: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  track.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              if (isPlaying && state.isPlaying) ...[
+                const SizedBox(width: 8),
+                const PlayingIcon(),
+              ],
+            ],
+          ),
+          subtitle: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  track.artist ?? "Unknown Artist",
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              Text(
+                _formatDuration(track.duration),
+                style: const TextStyle(fontSize: 12, color: Colors.grey),
+              ),
+            ],
+          ),
+          onTap: () async {
+            await viewModel.playItem(index);
+            ref.read(playerSheetControllerProvider.notifier).expand();
+          },
+          tileColor: isPlaying ? Colors.blue.withValues(alpha: 0.1) : null,
+        );
+      },
     );
   }
 
