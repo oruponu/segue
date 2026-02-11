@@ -43,7 +43,7 @@ class LibraryViewModel extends Notifier<LibraryState> {
       isLoading: true,
     );
     await _loadAudioSources(selectedDirectory);
-    state = state.copyWith(isLoading: false);
+    state = state.copyWith(isLoading: false, scanTotal: 0, scanProcessed: 0);
   }
 
   void selectAlbum(Album album) {
@@ -128,6 +128,8 @@ class LibraryViewModel extends Notifier<LibraryState> {
         .whereType<File>()
         .toList();
 
+    state = state.copyWith(scanTotal: files.length, scanProcessed: 0);
+
     final mediaItems = <MediaItem>[];
     final tempDir = await getTemporaryDirectory();
     for (final file in files) {
@@ -135,6 +137,7 @@ class LibraryViewModel extends Notifier<LibraryState> {
       try {
         metadata = readMetadata(file, getImage: true);
       } catch (_) {
+        state = state.copyWith(scanProcessed: state.scanProcessed + 1);
         continue;
       }
 
@@ -172,9 +175,13 @@ class LibraryViewModel extends Notifier<LibraryState> {
           },
         ),
       );
-    }
 
-    final albums = _groupByAlbum(mediaItems);
-    state = state.copyWith(playlist: mediaItems, albums: albums);
+      final albums = _groupByAlbum(mediaItems);
+      state = state.copyWith(
+        playlist: List.of(mediaItems),
+        albums: albums,
+        scanProcessed: state.scanProcessed + 1,
+      );
+    }
   }
 }
