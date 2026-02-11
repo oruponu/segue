@@ -16,6 +16,7 @@ class PlayerSheetController extends Notifier<PlayerSheetState> {
     state = PlayerSheetState(
       PlayerSheetAction.expand,
       DateTime.now().millisecondsSinceEpoch,
+      isExpanded: true,
     );
   }
 
@@ -23,6 +24,16 @@ class PlayerSheetController extends Notifier<PlayerSheetState> {
     state = PlayerSheetState(
       PlayerSheetAction.collapse,
       DateTime.now().millisecondsSinceEpoch,
+      isExpanded: false,
+    );
+  }
+
+  void setExpanded(bool expanded) {
+    if (expanded == state.isExpanded) return;
+    state = PlayerSheetState(
+      PlayerSheetAction.none,
+      state.timestamp,
+      isExpanded: expanded,
     );
   }
 }
