@@ -47,9 +47,7 @@ dependencies:
   path_provider: ^2.1.5
   text_scroll: ^0.2.1
   just_waveform: ^0.0.7
-  rust_lib_segue:
-    path: rust_builder
-  flutter_rust_bridge: 2.11.1
+  ffi: ^2.1.0
 
 dev_dependencies:
   flutter_test:
