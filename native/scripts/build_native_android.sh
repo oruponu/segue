@@ -239,6 +239,47 @@ build_essentia() {
     fi
 }
 
+ORT_VERSION="1.21.1"
+
+download_onnxruntime() {
+    local ABI=$1
+    local ORT_DIR="$BUILD_ROOT/onnxruntime"
+    local AAR_URL="https://repo1.maven.org/maven2/com/microsoft/onnxruntime/onnxruntime-android/${ORT_VERSION}/onnxruntime-android-${ORT_VERSION}.aar"
+    local AAR_FILE="/tmp/onnxruntime-android-${ORT_VERSION}.aar"
+    local DEST_LIB="$OUTPUT_DIR/$ABI"
+    local JNILIBS_DIR="$NATIVE_DIR/../android/app/src/main/jniLibs/$ABI"
+
+    echo "=== Downloading ONNX Runtime ${ORT_VERSION} for $ABI ==="
+
+    if [ -f "$DEST_LIB/libonnxruntime.so" ] && [ -d "$INCLUDE_DIR/onnxruntime" ]; then
+        echo "ONNX Runtime already present, skipping"
+        return
+    fi
+
+    if [ ! -f "$AAR_FILE" ]; then
+        echo "Downloading $AAR_URL ..."
+        curl -fL --retry 5 --retry-delay 3 -o "$AAR_FILE" "$AAR_URL"
+    fi
+
+    rm -rf "$ORT_DIR"
+    mkdir -p "$ORT_DIR"
+    unzip -q "$AAR_FILE" -d "$ORT_DIR"
+
+    mkdir -p "$DEST_LIB"
+    cp "$ORT_DIR/jni/$ABI/libonnxruntime.so" "$DEST_LIB/"
+
+    rm -rf "$INCLUDE_DIR/onnxruntime"
+    mkdir -p "$INCLUDE_DIR/onnxruntime"
+    cp "$ORT_DIR/headers/"*.h "$INCLUDE_DIR/onnxruntime/"
+
+    # Copy to jniLibs for APK packaging
+    mkdir -p "$JNILIBS_DIR"
+    cp "$DEST_LIB/libonnxruntime.so" "$JNILIBS_DIR/"
+
+    rm -f "$AAR_FILE"
+    rm -rf "$ORT_DIR"
+}
+
 copy_libs() {
     local ABI=$1
     local PREFIX="$BUILD_ROOT/$ABI/prefix"
@@ -270,6 +311,7 @@ for ABI in "${ABIS[@]}"; do
     build_yaml_cpp "$ABI"
     build_ffmpeg "$ABI"
     build_essentia "$ABI"
+    download_onnxruntime "$ABI"
     copy_libs "$ABI"
 done
 
@@ -277,3 +319,4 @@ echo ""
 echo "=== Android build complete ==="
 echo "Static libraries: $OUTPUT_DIR"
 echo "Headers: $INCLUDE_DIR/essentia"
+echo "Headers: $INCLUDE_DIR/onnxruntime"

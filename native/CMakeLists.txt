@@ -17,6 +17,13 @@ target_include_directories(essentia_bridge PRIVATE
 
 set(LIBS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/libs/android/${ANDROID_ABI})
 
+add_library(onnxruntime SHARED IMPORTED)
+set_target_properties(onnxruntime PROPERTIES
+    IMPORTED_LOCATION ${LIBS_DIR}/libonnxruntime.so)
+target_include_directories(essentia_bridge PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/onnxruntime)
+target_link_libraries(essentia_bridge PRIVATE onnxruntime)
+
 target_link_libraries(essentia_bridge PRIVATE
     ${LIBS_DIR}/libessentia.a
     ${LIBS_DIR}/libavcodec.a
