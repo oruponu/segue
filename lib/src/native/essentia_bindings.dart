@@ -21,6 +21,22 @@ final class EssentiaResult extends Struct {
   external int errorCode; // 0=success, 1=cancelled, 2=decode error, 3=analysis error
 }
 
+const int styleMaxResults = 5;
+
+final class StyleResult extends Struct {
+  @Int32()
+  external int count;
+
+  @Array(styleMaxResults)
+  external Array<Int32> indices;
+
+  @Array(styleMaxResults)
+  external Array<Float> confidences;
+
+  @Int32()
+  external int errorCode;
+}
+
 final class EssentiaCancelFlag extends Opaque {}
 
 typedef EssentiaCancelFlagCreateNative = Pointer<EssentiaCancelFlag> Function();
@@ -49,5 +65,18 @@ typedef EssentiaAnalyzeNative =
 typedef EssentiaAnalyze =
     EssentiaResult Function(
       Pointer<Utf8> path,
+      Pointer<EssentiaCancelFlag> cancelFlag,
+    );
+
+typedef EssentiaClassifyStyleNative =
+    StyleResult Function(
+      Pointer<Utf8> audioPath,
+      Pointer<Utf8> modelPath,
+      Pointer<EssentiaCancelFlag> cancelFlag,
+    );
+typedef EssentiaClassifyStyle =
+    StyleResult Function(
+      Pointer<Utf8> audioPath,
+      Pointer<Utf8> modelPath,
       Pointer<EssentiaCancelFlag> cancelFlag,
     );

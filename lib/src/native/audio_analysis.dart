@@ -4,6 +4,7 @@ import 'dart:isolate';
 
 import 'package:ffi/ffi.dart';
 
+import 'discogs_labels.dart';
 import 'essentia_bindings.dart';
 import 'native_library.dart';
 
@@ -21,6 +22,54 @@ class AnalysisResult {
   });
 }
 
+class StylePrediction {
+  final int labelIndex;
+  final double confidence;
+  final String genre;
+  final String style;
+  final String displayName;
+
+  const StylePrediction({
+    required this.labelIndex,
+    required this.confidence,
+    required this.genre,
+    required this.style,
+    required this.displayName,
+  });
+
+  static final Set<String> _duplicateStyles = _buildDuplicateStyles();
+
+  static Set<String> _buildDuplicateStyles() {
+    final counts = <String, int>{};
+    for (final label in discogsLabels) {
+      final parts = label.split('---');
+      final style = parts.length > 1 ? parts[1] : parts[0];
+      counts[style] = (counts[style] ?? 0) + 1;
+    }
+    return {
+      for (final e in counts.entries)
+        if (e.value > 1) e.key,
+    };
+  }
+
+  static StylePrediction fromLabelIndex(int index, double confidence) {
+    final label = discogsLabels[index];
+    final parts = label.split('---');
+    final genre = parts[0];
+    final style = parts.length > 1 ? parts[1] : parts[0];
+    final displayName = _duplicateStyles.contains(style)
+        ? '$style ($genre)'
+        : style;
+    return StylePrediction(
+      labelIndex: index,
+      confidence: confidence,
+      genre: genre,
+      style: style,
+      displayName: displayName,
+    );
+  }
+}
+
 class AudioAnalysis {
   static DynamicLibrary? _lib;
   static late final EssentiaCancelFlagCreate _cancelFlagCreate;
@@ -29,6 +78,7 @@ class AudioAnalysis {
   static late final EssentiaInit _init;
 
   static Pointer<EssentiaCancelFlag>? _currentCancelFlag;
+  static Pointer<EssentiaCancelFlag>? _currentStyleCancelFlag;
 
   static void ensureInitialized() {
     if (_lib != null) return;
@@ -86,11 +136,40 @@ class AudioAnalysis {
     }
   }
 
+  static Future<List<StylePrediction>?> classifyStyle({
+    required String pathStr,
+    required String modelPath,
+  }) async {
+    ensureInitialized();
+
+    final oldFlag = _currentStyleCancelFlag;
+    if (oldFlag != null) {
+      _cancelFlagSet(oldFlag);
+    }
+
+    final flag = _cancelFlagCreate();
+    _currentStyleCancelFlag = flag;
+    final flagAddress = flag.address;
+
+    try {
+      final result = await Isolate.run(() {
+        return _runStyleClassification(pathStr, modelPath, flagAddress);
+      });
+      return result;
+    } finally {
+      _cancelFlagDestroy(flag);
+      if (_currentStyleCancelFlag == flag) {
+        _currentStyleCancelFlag = null;
+      }
+    }
+  }
+
   static const _errorMessages = {
     0: 'success',
     1: 'cancelled',
     2: 'decode error',
     3: 'analysis error',
+    4: 'model load error',
   };
 
   static AnalysisResult? _runAnalysis(String pathStr, int flagAddress) {
@@ -129,11 +208,64 @@ class AudioAnalysis {
     }
   }
 
+  static List<StylePrediction>? _runStyleClassification(
+    String pathStr,
+    String modelPath,
+    int flagAddress,
+  ) {
+    dev.log('classifyStyle: path=$pathStr', name: 'Essentia');
+
+    final lib = openEssentiaLibrary();
+    final classify = lib
+        .lookupFunction<EssentiaClassifyStyleNative, EssentiaClassifyStyle>(
+          'essentia_classify_style',
+        );
+
+    final pathPtr = pathStr.toNativeUtf8();
+    final modelPtr = modelPath.toNativeUtf8();
+    final flag = Pointer<EssentiaCancelFlag>.fromAddress(flagAddress);
+
+    try {
+      final result = classify(pathPtr, modelPtr, flag);
+
+      dev.log(
+        'style result: errorCode=${result.errorCode} '
+        '(${_errorMessages[result.errorCode] ?? "unknown"}), '
+        'count=${result.count}',
+        name: 'Essentia',
+      );
+
+      if (result.errorCode != 0) {
+        return null;
+      }
+
+      final predictions = <StylePrediction>[];
+      for (int i = 0; i < result.count; i++) {
+        predictions.add(
+          StylePrediction.fromLabelIndex(
+            result.indices[i],
+            result.confidences[i],
+          ),
+        );
+      }
+      return predictions;
+    } finally {
+      malloc.free(pathPtr);
+      malloc.free(modelPtr);
+    }
+  }
+
   static void cancelAnalyze() {
     final flag = _currentCancelFlag;
     if (flag != null) {
       _cancelFlagSet(flag);
-      // 破棄は実行中の analyze() の finally に任せる
+    }
+  }
+
+  static void cancelStyleClassify() {
+    final flag = _currentStyleCancelFlag;
+    if (flag != null) {
+      _cancelFlagSet(flag);
     }
   }
 
