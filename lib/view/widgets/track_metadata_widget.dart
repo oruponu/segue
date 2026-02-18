@@ -13,46 +13,53 @@ class TrackMetadataWidget extends ConsumerWidget {
     final state = ref.watch(playerViewModelProvider);
     final mediaItem = state.playingMediaItem;
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Column(
-        children: [
-          Container(
-            width: 250,
-            height: 250,
-            decoration: BoxDecoration(
-              color: Colors.grey[800],
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: const [
-                BoxShadow(
-                  color: Colors.black45,
-                  offset: Offset(0, 5),
-                  blurRadius: 10,
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Column(
+            children: [
+              Container(
+                width: 250,
+                height: 250,
+                decoration: BoxDecoration(
+                  color: Colors.grey[800],
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Colors.black45,
+                      offset: Offset(0, 5),
+                      blurRadius: 10,
+                    ),
+                  ],
                 ),
-              ],
-            ),
-            child: _buildThumbnail(mediaItem?.artUri),
+                child: _buildThumbnail(mediaItem?.artUri),
+              ),
+              const SizedBox(height: 30),
+              SizedBox(
+                height: 36,
+                child: AutoScrollText(
+                  text: mediaItem?.title ?? "Unknown Title",
+                  style: const TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              SizedBox(
+                height: 24,
+                child: AutoScrollText(
+                  text: mediaItem?.artist ?? "Unknown Artist",
+                  style: const TextStyle(fontSize: 18, color: Colors.white70),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 30),
-          SizedBox(
-            height: 36,
-            child: AutoScrollText(
-              text: mediaItem?.title ?? "Unknown Title",
-              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-          ),
-          const SizedBox(height: 8),
-          SizedBox(
-            height: 24,
-            child: AutoScrollText(
-              text: mediaItem?.artist ?? "Unknown Artist",
-              style: const TextStyle(fontSize: 18, color: Colors.white70),
-            ),
-          ),
-          const SizedBox(height: 8),
-          _buildAnalysisChips(state),
-        ],
-      ),
+        ),
+        const SizedBox(height: 8),
+        _buildAnalysisChips(state),
+      ],
     );
   }
 
@@ -83,17 +90,28 @@ class TrackMetadataWidget extends ConsumerWidget {
       );
     }
 
-    if (state.bpm == null && state.key == null) {
+    final hasAnalysis = state.bpm != null || state.key != null;
+    final hasStyles = state.styles != null && state.styles!.isNotEmpty;
+
+    if (!hasAnalysis && !hasStyles) {
       return const SizedBox(height: 48);
     }
 
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      spacing: 8,
-      children: [
-        if (state.bpm != null) _chip("BPM ${state.bpm!.round()}"),
-        if (state.key != null) _chip(state.key!),
-      ],
+    return SizedBox(
+      height: 48,
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Row(
+          spacing: 8,
+          children: [
+            if (state.bpm != null) _chip("BPM ${state.bpm!.round()}"),
+            if (state.key != null) _chip(state.key!),
+            if (hasStyles)
+              ...state.styles!.take(3).map((s) => _styleChip(s.displayName)),
+          ],
+        ),
+      ),
     );
   }
 
@@ -104,6 +122,16 @@ class TrackMetadataWidget extends ConsumerWidget {
       side: BorderSide.none,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       backgroundColor: Colors.white.withValues(alpha: 0.1),
+    );
+  }
+
+  Widget _styleChip(String label) {
+    return Chip(
+      label: Text(label),
+      labelStyle: const TextStyle(fontSize: 13, color: Colors.white70),
+      side: BorderSide.none,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      backgroundColor: Colors.purple.withValues(alpha: 0.25),
     );
   }
 }
