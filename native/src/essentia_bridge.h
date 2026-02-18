@@ -20,6 +20,7 @@ typedef struct EssentiaCancelFlag EssentiaCancelFlag;
 
 EssentiaCancelFlag* essentia_cancel_flag_create(void);
 void essentia_cancel_flag_set(EssentiaCancelFlag* flag);
+int essentia_cancel_flag_is_set(EssentiaCancelFlag* flag);
 void essentia_cancel_flag_destroy(EssentiaCancelFlag* flag);
 
 void essentia_init(void);
