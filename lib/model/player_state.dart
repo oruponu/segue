@@ -1,4 +1,5 @@
 import 'package:audio_service/audio_service.dart';
+import 'package:segue/src/native/audio_analysis.dart';
 
 class PlayerState {
   final String? selectedDirectory;
@@ -7,6 +8,7 @@ class PlayerState {
   final bool isAnalyzing;
   final double? bpm;
   final String? key;
+  final List<StylePrediction>? styles;
 
   PlayerState({
     this.selectedDirectory,
@@ -15,6 +17,7 @@ class PlayerState {
     this.isAnalyzing = false,
     this.bpm,
     this.key,
+    this.styles,
   });
 
   PlayerState copyWith({
@@ -24,6 +27,7 @@ class PlayerState {
     bool? isAnalyzing,
     double? bpm,
     String? key,
+    List<StylePrediction>? styles,
   }) {
     return PlayerState(
       selectedDirectory: selectedDirectory ?? this.selectedDirectory,
@@ -32,6 +36,7 @@ class PlayerState {
       isAnalyzing: isAnalyzing ?? this.isAnalyzing,
       bpm: bpm ?? this.bpm,
       key: key ?? this.key,
+      styles: styles ?? this.styles,
     );
   }
 }
