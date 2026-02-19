@@ -80,9 +80,6 @@ StyleResult essentia_classify_style(const char* audio_path, const char* model_pa
     return result;
   }
 
-  LOGI("Decoded %zu samples (%.1f seconds) at %dHz", audio.size(), (float)audio.size() / STYLE_SR,
-       STYLE_SR);
-
   if (is_cancelled(cancel_flag)) {
     result.error_code = 1;
     return result;
@@ -322,7 +319,6 @@ StyleResult essentia_classify_style(const char* audio_path, const char* model_pa
   }
   result.error_code = 0;
 
-  LOGI("Top style: idx=%d conf=%.3f", result.indices[0], result.confidences[0]);
   return result;
 }
 
