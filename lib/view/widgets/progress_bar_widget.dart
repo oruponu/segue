@@ -67,7 +67,9 @@ class ProgressBarWidget extends ConsumerWidget {
                     width: double.infinity,
                     child: waveformAsync.when(
                       data: (waveform) {
-                        if (waveform == null) return _buildFallbackLine();
+                        if (waveform == null) {
+                          return _buildFallbackLine(displayPercent);
+                        }
                         return CustomPaint(
                           painter: WaveformPainter(
                             waveform: waveform,
@@ -75,8 +77,8 @@ class ProgressBarWidget extends ConsumerWidget {
                           ),
                         );
                       },
-                      error: (_, _) => _buildFallbackLine(),
-                      loading: () => _buildFallbackLine(),
+                      error: (_, _) => _buildFallbackLine(displayPercent),
+                      loading: () => _buildFallbackLine(displayPercent),
                     ),
                   ),
                 ),
@@ -115,9 +117,21 @@ class ProgressBarWidget extends ConsumerWidget {
     handler.seek(seekTarget);
   }
 
-  Widget _buildFallbackLine() {
+  Widget _buildFallbackLine(double displayPercent) {
     return Center(
-      child: Container(height: 2, color: Colors.white.withValues(alpha: 0.24)),
+      child: SizedBox(
+        width: double.infinity,
+        height: 2,
+        child: Stack(
+          children: [
+            Container(color: Colors.white.withValues(alpha: 0.24)),
+            FractionallySizedBox(
+              widthFactor: displayPercent.clamp(0.0, 1.0),
+              child: Container(color: Colors.white.withValues(alpha: 0.8)),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
