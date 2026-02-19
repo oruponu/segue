@@ -4,7 +4,6 @@ import 'package:audio_service/audio_service.dart';
 import 'package:drift/drift.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:just_waveform/just_waveform.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:segue/database/database.dart';
@@ -192,16 +191,6 @@ class LibraryViewModel extends Notifier<LibraryState> {
         final waveFile = File(
           '${tempDir.path}/${metadata.file.path.hashCode}.wave',
         );
-        if (!await waveFile.exists()) {
-          try {
-            await JustWaveform.extract(
-              audioInFile: metadata.file,
-              waveOutFile: waveFile,
-            ).drain();
-          } catch (_) {
-            // デコード非対応フォーマットはスキップ
-          }
-        }
 
         final title = metadata.title ?? "Unknown Title";
         final durationMs = metadata.duration?.inMilliseconds;
