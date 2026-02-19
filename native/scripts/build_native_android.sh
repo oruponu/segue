@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-# Usage: ./build_essentia_android.sh [NDK_PATH]
+# Usage: ./build_native_android.sh [NDK_PATH]
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 NATIVE_DIR="$(dirname "$SCRIPT_DIR")"
@@ -27,21 +27,16 @@ TOOLCHAIN="$NDK/build/cmake/android.toolchain.cmake"
 echo "Using NDK: $NDK"
 echo "Building for ABIs: ${ABIS[*]}"
 
-# Essentia's waf requires Python <= 3.10
+# Find Python 3 for Essentia's waf
 PYTHON_WAF=""
-for candidate in python3.10 python3.9 python3.8 python3; do
+for candidate in python3 python3.12 python3.11 python3.10; do
     if command -v "$candidate" &>/dev/null; then
-        major=$("$candidate" -c "import sys; print(sys.version_info[0])")
-        minor=$("$candidate" -c "import sys; print(sys.version_info[1])")
-        if [ "$major" -eq 3 ] && [ "$minor" -le 10 ]; then
-            PYTHON_WAF="$candidate"
-            break
-        fi
+        PYTHON_WAF="$candidate"
+        break
     fi
 done
 if [ -z "$PYTHON_WAF" ]; then
-    echo "Error: Essentia's waf requires Python <= 3.10."
-    echo "Install: sudo add-apt-repository ppa:deadsnakes/ppa && sudo apt install python3.10"
+    echo "Error: Python 3 is required for Essentia's waf."
     exit 1
 fi
 echo "Using Python for waf: $PYTHON_WAF ($($PYTHON_WAF --version))"
@@ -56,7 +51,6 @@ download_and_extract() {
 
     if [ ! -d "$dest" ]; then
         mkdir -p "$dest"
-
         rm -f "$archive"
 
         echo "Downloading $url ..."
@@ -115,7 +109,6 @@ build_fftw3() {
     cd "$BUILD_DIR"
 
     local CC="$NDK/toolchains/llvm/prebuilt/linux-x86_64/bin/${TRIPLE}${ANDROID_API}-clang"
-    local CXX="$NDK/toolchains/llvm/prebuilt/linux-x86_64/bin/${TRIPLE}${ANDROID_API}-clang++"
 
     "$SRC_DIR/configure" \
         --host="$TRIPLE" \
@@ -126,7 +119,6 @@ build_fftw3() {
         --disable-fortran \
         --disable-doc \
         CC="$CC" \
-        CXX="$CXX" \
         CFLAGS="-fPIC"
 
     make -j$(nproc)
@@ -204,6 +196,62 @@ build_ffmpeg() {
     make install
 }
 
+install_eigen3() {
+    local SRC_DIR="$BUILD_ROOT/eigen3-src"
+    local PREFIX="$BUILD_ROOT/$1/prefix"
+
+    echo "=== Installing Eigen3 for $1 ==="
+
+    download_and_extract "https://gitlab.com/libeigen/eigen/-/archive/3.4.0/eigen-3.4.0.tar.gz" "$SRC_DIR"
+
+    mkdir -p "$PREFIX/include/eigen3"
+    cp -r "$SRC_DIR/Eigen" "$PREFIX/include/eigen3/"
+    cp -r "$SRC_DIR/unsupported" "$PREFIX/include/eigen3/"
+
+    mkdir -p "$PREFIX/share/pkgconfig"
+    cat > "$PREFIX/share/pkgconfig/eigen3.pc" << EOF
+prefix=$PREFIX
+includedir=\${prefix}/include/eigen3
+
+Name: Eigen3
+Description: Lightweight C++ template library for linear algebra
+Version: 3.4.0
+Cflags: -I\${includedir}
+EOF
+
+    rm -rf "$INCLUDE_DIR/Eigen" "$INCLUDE_DIR/unsupported"
+    cp -r "$SRC_DIR/Eigen" "$INCLUDE_DIR/"
+    cp -r "$SRC_DIR/unsupported" "$INCLUDE_DIR/"
+}
+
+build_libsamplerate() {
+    local ABI=$1
+    local SRC_DIR="$BUILD_ROOT/libsamplerate-src"
+    local BUILD_DIR="$BUILD_ROOT/$ABI/libsamplerate"
+    local PREFIX="$BUILD_ROOT/$ABI/prefix"
+
+    echo "=== Building libsamplerate for $ABI ==="
+
+    download_and_extract "https://github.com/libsndfile/libsamplerate/releases/download/0.2.2/libsamplerate-0.2.2.tar.xz" "$SRC_DIR"
+
+    mkdir -p "$BUILD_DIR"
+    cd "$BUILD_DIR"
+
+    cmake "$SRC_DIR" \
+        -DCMAKE_TOOLCHAIN_FILE="$TOOLCHAIN" \
+        -DANDROID_ABI="$ABI" \
+        -DANDROID_PLATFORM="android-$ANDROID_API" \
+        -DCMAKE_INSTALL_PREFIX="$PREFIX" \
+        -DCMAKE_POLICY_DEFAULT_CMP0057=NEW \
+        -DBUILD_SHARED_LIBS=OFF \
+        -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
+        -DBUILD_TESTING=OFF \
+        -DLIBSAMPLERATE_EXAMPLES=OFF
+
+    make -j$(nproc)
+    make install
+}
+
 build_essentia() {
     local ABI=$1
     local TRIPLE=$(abi_to_triple "$ABI")
@@ -212,7 +260,7 @@ build_essentia() {
 
     echo "=== Building Essentia for $ABI ==="
 
-    download_and_extract "https://github.com/MTG/essentia/archive/refs/tags/v2.1_beta5.tar.gz" "$SRC_DIR"
+    download_and_extract "https://github.com/MTG/essentia/archive/f0f6c358abd133e675710ce2d5f77cc935a75eb9.tar.gz" "$SRC_DIR"
 
     cd "$SRC_DIR"
 
@@ -221,9 +269,9 @@ build_essentia() {
 
     $PYTHON_WAF waf configure \
         --cross-compile-android \
-        --lightweight=fftw,yaml \
+        --lightweight=libav,libsamplerate,yaml,fftw \
         --prefix="$PREFIX" \
-        --pkg-config-path="$PREFIX/lib/pkgconfig" \
+        --pkg-config-path="$PREFIX/lib/pkgconfig:$PREFIX/share/pkgconfig" \
         --fft=FFTW \
         --build-static \
         CC="$CC" \
@@ -234,9 +282,8 @@ build_essentia() {
     $PYTHON_WAF waf build -j$(nproc)
     $PYTHON_WAF waf install
 
-    if [ ! -d "$INCLUDE_DIR/essentia" ]; then
-        cp -r "$PREFIX/include/essentia" "$INCLUDE_DIR/"
-    fi
+    rm -rf "$INCLUDE_DIR/essentia"
+    cp -r "$PREFIX/include/essentia" "$INCLUDE_DIR/"
 }
 
 ORT_VERSION="1.21.1"
@@ -272,7 +319,7 @@ download_onnxruntime() {
     mkdir -p "$INCLUDE_DIR/onnxruntime"
     cp "$ORT_DIR/headers/"*.h "$INCLUDE_DIR/onnxruntime/"
 
-    # Copy to jniLibs for APK packaging
+    # jniLibs for APK packaging
     mkdir -p "$JNILIBS_DIR"
     cp "$DEST_LIB/libonnxruntime.so" "$JNILIBS_DIR/"
 
@@ -288,19 +335,15 @@ copy_libs() {
     echo "=== Copying libraries for $ABI ==="
     mkdir -p "$DEST"
 
-    cp "$PREFIX/lib/libessentia.a" "$DEST/"
-    cp "$PREFIX/lib/libfftw3f.a" "$DEST/"
-    cp "$PREFIX/lib/libyaml-cpp.a" "$DEST/"
-    cp "$PREFIX/lib/libavcodec.a" "$DEST/"
-    cp "$PREFIX/lib/libavformat.a" "$DEST/"
-    cp "$PREFIX/lib/libavutil.a" "$DEST/"
-    cp "$PREFIX/lib/libswresample.a" "$DEST/"
+    local STATIC_LIBS=(libessentia libfftw3f libyaml-cpp libavcodec libavformat libavutil libswresample libsamplerate)
+    for lib in "${STATIC_LIBS[@]}"; do
+        cp "$PREFIX/lib/${lib}.a" "$DEST/"
+    done
 
     if [ ! -d "$INCLUDE_DIR/libavcodec" ]; then
-        cp -r "$PREFIX/include/libavcodec" "$INCLUDE_DIR/"
-        cp -r "$PREFIX/include/libavformat" "$INCLUDE_DIR/"
-        cp -r "$PREFIX/include/libavutil" "$INCLUDE_DIR/"
-        cp -r "$PREFIX/include/libswresample" "$INCLUDE_DIR/"
+        for hdr in libavcodec libavformat libavutil libswresample; do
+            cp -r "$PREFIX/include/$hdr" "$INCLUDE_DIR/"
+        done
     fi
 
     echo "Libraries copied to $DEST"
@@ -310,6 +353,8 @@ for ABI in "${ABIS[@]}"; do
     build_fftw3 "$ABI"
     build_yaml_cpp "$ABI"
     build_ffmpeg "$ABI"
+    build_libsamplerate "$ABI"
+    install_eigen3 "$ABI"
     build_essentia "$ABI"
     download_onnxruntime "$ABI"
     copy_libs "$ABI"
