@@ -76,10 +76,16 @@ class LibraryViewModel extends Notifier<LibraryState> {
 
     for (final tracks in map.values) {
       tracks.sort((a, b) {
-        final aNum = a.extras?['trackNumber'] as int?;
-        final bNum = b.extras?['trackNumber'] as int?;
-        if (aNum != null || bNum != null) {
-          return (aNum ?? 0).compareTo(bNum ?? 0);
+        final aDisc = a.extras?['discNumber'] as int?;
+        final bDisc = b.extras?['discNumber'] as int?;
+        if (aDisc != null || bDisc != null) {
+          final discCmp = (aDisc ?? 0).compareTo(bDisc ?? 0);
+          if (discCmp != 0) return discCmp;
+        }
+        final aTrack = a.extras?['trackNumber'] as int?;
+        final bTrack = b.extras?['trackNumber'] as int?;
+        if (aTrack != null || bTrack != null) {
+          return (aTrack ?? 0).compareTo(bTrack ?? 0);
         }
         return a.id.compareTo(b.id);
       });
