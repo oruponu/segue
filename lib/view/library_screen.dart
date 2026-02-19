@@ -109,6 +109,7 @@ class LibraryScreen extends ConsumerWidget {
     final viewModel = ref.read(libraryViewModelProvider.notifier);
 
     return ListView.builder(
+      key: const PageStorageKey('album_list'),
       itemCount: state.albums.length,
       itemBuilder: (context, index) {
         final album = state.albums[index];
