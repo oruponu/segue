@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2006-2016  Music Technology Group - Universitat Pompeu Fabra
+ * Copyright (C) 2006-2021  Music Technology Group - Universitat Pompeu Fabra
  *
  * This file is part of Essentia
  *
@@ -44,8 +44,9 @@ class AudioContext {
   int _inputBufSize;   // input buffer size
   float* _buffer;      // input FLT buffer interleaved
   uint8_t* _buffer_test; // input buffer in converted to codec sample format
+  int64_t _pts = 0;  // initialize to 0 by default
 
-  struct AVAudioResampleContext* _convertCtxAv;
+  struct SwrContext* _convertCtxAv;
 
   //const static int FFMPEG_BUFFER_SIZE = MAX_AUDIO_FRAME_SIZE * 2;
   // MAX_AUDIO_FRAME_SIZE is in bytes, multiply it by 2 to get some margin

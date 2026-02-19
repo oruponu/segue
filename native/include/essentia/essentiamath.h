@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2006-2016  Music Technology Group - Universitat Pompeu Fabra
+ * Copyright (C) 2006-2021  Music Technology Group - Universitat Pompeu Fabra
  *
  * This file is part of Essentia
  *
@@ -39,6 +39,7 @@
 #include "utils/tnt/tnt2essentiautils.h"
 
 #define M_2PI (2 * M_PI)
+#define ALL_NOTES "A", "A#", "B", "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#"
 
 namespace essentia {
 
@@ -281,6 +282,24 @@ std::vector<T> varianceFrames(const std::vector<std::vector<T> >& frames) {
   }
   for (uint j=0; j<vsize; j++) result[j] /= nframes;
 
+  return result;
+}
+
+
+// returns the sum of frames 
+template <typename T>
+std::vector<T> sumFrames(const std::vector<std::vector<T> >& frames) {
+  if (frames.empty()) {
+    throw EssentiaException("sumFrames: trying to calculate sum of empty input frames");
+  }
+  size_t nframes = frames.size();
+  size_t vsize = frames[0].size();
+  std::vector<T> result(vsize, (T)0);
+  for (size_t j=0; j<vsize; j++) {
+    for (size_t i=0; i<nframes; i++) {
+      result[j] += frames[i][j];
+    }
+  }
   return result;
 }
 
@@ -720,15 +739,101 @@ inline Real hz2hz(Real hz){
   return hz;
 }
 
-inline Real hz2cents(Real hz) {
-  return 12 * std::log(hz/440)/std::log(2.) + 69;
+inline Real cents2hz(Real cents, Real referenceFrequency) {
+  return referenceFrequency * powf(2.0, cents / 1200.0);
+}
+
+inline Real hz2cents(Real hz, Real referenceFrequency) {
+  return 1200 * log2(hz / referenceFrequency);
+}
+
+inline int hz2midi(Real hz, Real tuningFrequency) {
+  return 69 + (int) round(log2(hz / tuningFrequency) * 12);
+}
+
+inline Real midi2hz(int midiNoteNumber, Real tuningFrequency) {
+  return tuningFrequency * powf(2, (midiNoteNumber - 69) / 12.0);
+}
+
+inline std::string note2root(std::string note) {
+    return note.substr(0, note.size()-1);
+}
+
+inline int note2octave(std::string note) {
+    char octaveChar = note.back();
+    return octaveChar - '0';
+}
+
+inline std::string midi2note(int midiNoteNumber) {
+  std::string NOTES[] = {ALL_NOTES};
+  int nNotes = *(&NOTES + 1) - NOTES;
+  int CIdx = 3;
+  int diffCIdx = nNotes - CIdx;
+  int noteIdx = midiNoteNumber - 69;
+  int idx = abs(noteIdx) % nNotes;
+  int octave = (CIdx + 1) + floor(float(noteIdx + diffCIdx) / nNotes);
+  if (noteIdx < 0) {
+    idx = abs(idx - nNotes) % nNotes;
+  }
+  std::string closest_note = NOTES[idx] + std::to_string(octave);
+  return closest_note;
+}
+
+inline int note2midi(std::string note) {
+  //const std::vector<std::string> ALL_NOTES { "A", "A#", "B", "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#" };
+  std::string NOTES[] = {ALL_NOTES};
+  int octave = note2octave(note);
+  std::string root = note2root(note);
+  int nNotes = *(&NOTES + 1) - NOTES;
+  //int nNotes = NOTES.size();
+  int CIdx = 3;
+
+  int noteIdx = floor((octave - (CIdx + 1)) * nNotes);
+  int idx = 0;
+  for (int i = 0; i < nNotes; i++) {
+    if (NOTES[i] == root) {
+      idx = i;
+      if (idx >= CIdx) {
+        idx = idx - nNotes;
+      }
+      break;
+    }
+  }
+  int midiNote = noteIdx + 69 + idx;
+  return midiNote;
+}
+
+inline std::string hz2note(Real hz, Real tuningFrequency) {
+    int midiNoteNumber = hz2midi(hz, tuningFrequency);
+    return midi2note(midiNoteNumber);
+}
+
+inline int note2hz(std::string note, Real tuningFrequency) {
+    int midiNoteNumber = note2midi(note);
+    return midi2hz(midiNoteNumber, tuningFrequency);
+}
+
+inline int db2velocity (Real decibels, Real hearingThreshold) {
+  int velocity = 0;
+  if (decibels > hearingThreshold) {
+    velocity = (int)((hearingThreshold - decibels) * 127 / hearingThreshold);  // decibels should be negative
+  }
+  return velocity;
+}
+
+inline Real velocity2db(int velocity, Real hearingThreshold) {
+  return -(hearingThreshold * velocity / 127 -hearingThreshold);
 }
 
 inline int argmin(const std::vector<Real>& input) {
+  if (input.empty())
+    throw EssentiaException("trying to get argmin of empty array");
   return std::min_element(input.begin(), input.end()) - input.begin();
 }
 
 inline int argmax(const std::vector<Real>& input) {
+  if (input.empty())
+    throw EssentiaException("trying to get argmax of empty array");
   return std::max_element(input.begin(), input.end()) - input.begin();
 }
 
@@ -756,6 +861,20 @@ template <typename T> void normalizeAbs(std::vector<T>& array) {
   if (maxElement != (T) 0.0) {
     for (uint i=0; i<array.size(); i++) {
       array[i] /= maxElement;
+    }
+  }
+}
+
+// normalize to the max(abs(array)) with a headroom value
+template <typename T> void normalizeAbs(std::vector<T>& array, T headroom) {
+  if (array.empty()) return;
+  std::vector<T> absArray = array;
+  rectify(absArray);
+  T maxElement = *std::max_element(absArray.begin(), absArray.end());
+
+  if (maxElement != (T) 0.0) {
+    for (uint i=0; i<array.size(); i++) {
+      array[i] /= (maxElement + headroom);
     }
   }
 }
@@ -795,7 +914,7 @@ std::vector<T> derivative(const std::vector<T>& array) {
 }
 
 template<typename T, typename U, typename Comparator=std::greater<T> >
-class PairCompare : public std::binary_function<T, U, bool> {
+class PairCompare {
   Comparator _cmp;
   public:
     bool operator () (const std::pair<T,U>& p1, const std::pair<T,U>& p2) const {
@@ -910,15 +1029,15 @@ void hist(const T* array, uint n, int* n_array, T* x_array, uint n_bins) {
  */
 template <typename T>
 void bincount(const std::vector<T>& input, std::vector<T>& output) {
-   output.clear();
-   output.resize( (int) ( std::max<Real>( input[argmax(input)], 0.) + 0.5 ) + 1);
-   uint index = 0;
-   for (uint i=0; i< input.size(); i++) {
-     index = int(std::max<Real>(input[i],0) + 0.5);
-     if (index < output.size() ) {
-       output[index] += 1.;
-     }
-   }
+  output.clear();
+  output.resize( (int) ( std::max<Real>( input[argmax(input)], 0.) + 0.5 ) + 1);
+  uint index = 0;
+  for (uint i=0; i< input.size(); i++) {
+    index = int(std::max<Real>(input[i],0) + 0.5);
+    if (index < output.size() ) {
+      output[index] += 1.;
+    }
+  }
 }
 
 
@@ -1024,6 +1143,61 @@ inline std::string equivalentKey(const std::string key) {
 }
 
 
+/** Circularly rotate an input chromagram by an specified optimal transposition index (oti).
+ * Expects input chromagram to be in the shape (frames , n_bins) where frames is no of frames and n_bins is no of chroma bins.
+ * Throws an exception if the input chromagram is empty.
+ */
+template <typename T>
+void rotateChroma(std::vector<std::vector<T> >& inputMatrix, int oti) {
+  if (inputMatrix.empty())
+    throw EssentiaException("rotateChroma: trying to rotate an empty matrix");
+  for (size_t i=0; i<inputMatrix.size(); i++) {
+    std::rotate(inputMatrix[i].begin(), inputMatrix[i].end() - oti, inputMatrix[i].end());
+  }
+}
+
+
+/**
+ * returns the dot product of two 1D vectors.
+ * Throws an exception either one of the input arrays are empty.
+ */
+template <typename T>
+T dotProduct(const std::vector<T>& xArray, const std::vector<T>& yArray) {
+  if (xArray.empty() || yArray.empty())
+    throw EssentiaException("dotProduct: trying to calculate the dotProduct of empty arrays!");
+  return std::inner_product(xArray.begin(), xArray.end(), yArray.begin(), 0.0);
+}
+
+
+/**	
+ * returns the q-th percentile of an 1D input array (same as numpy percentile implementation).	
+ * Throws an exception if the input array is empty.	
+ */ 
+template <typename T> T percentile(const std::vector<T>& array, Real qpercentile) {
+  if (array.empty())
+    throw EssentiaException("percentile: trying to calculate percentile of empty array");
+
+  std::vector<T> sorted_array = array;
+  // sort the array
+  std::sort(sorted_array.begin(), sorted_array.end());
+  qpercentile /= 100.;
+
+  Real k;
+  int sortArraySize = sorted_array.size();
+  if (sortArraySize > 1) {
+    k = (sortArraySize - 1) * qpercentile;
+  }
+  else {
+    // to avoid zero value in arrays with single element
+    k = sortArraySize * qpercentile;
+  }
+  // apply interpolation
+  Real d0 = sorted_array[int(std::floor(k))] * (std::ceil(k) - k);
+  Real d1 = sorted_array[int(std::ceil(k))] * (k - std::floor(k));
+  return d0 + d1;
+}
+
+
 /**
  * Sample covariance
  */
@@ -1043,6 +1217,7 @@ template <typename T> T covariance(const std::vector<T>& x, const T xMean, const
 
   return (T)(cov / (Real)x.size());
 }
+
 
 /**
  * Returns the sample Pearson correlation coefficient of a pair of vectors as described in,
@@ -1073,6 +1248,200 @@ template <typename T> T pearsonCorrelationCoefficient(const std::vector<T>& x, c
   // Clipping the output is a cheap way to mantain this contrain.
   // Seen in https://github.com/numpy/numpy/blob/v1.15.0/numpy/lib/function_base.py#L2403-L2406
   return std::max(std::min(corr, (T)1.0), (T)-1.0);
+}
+
+
+/**
+ * Apply heaviside step function to an input m X n dimentional vector.
+ * f(x) = if x<0: x=0; if x>=0: x=1
+ * Throws an exception if the input array is empty.
+ * returns a 2D binary vector of m X n shape
+ */
+template <typename T>
+void heavisideStepFunction(std::vector<std::vector<T> >& inputArray) {
+  if (inputArray.empty())
+    throw EssentiaException("heavisideStepFunction: found empty array as input!");
+
+  for (size_t i=0; i<inputArray.size(); i++) {
+    for (size_t j=0; j<inputArray[i].size(); j++) {
+      // initialize all non negative elements as zero otherwise as one
+      inputArray[i][j] = (inputArray[i][j] < 0) ? 0 : 1;
+    }
+  }
+}
+
+
+/**
+ * Pairwise euclidean distances between two 2D vectors.
+ * Throws an exception if the input array is empty.
+ * Returns a (m.shape[0], n.shape[0]) dimentional vector where m and n are the two input arrays
+ * TODO: [add other distance metrics beside euclidean such as cosine, mahanalobis etc as a configurable parameter]
+ */
+template <typename T>
+std::vector<std::vector<T> > pairwiseDistance(const std::vector<std::vector<T> >& m, const std::vector<std::vector<T> >& n) {
+
+  if (m.empty() || n.empty())
+    throw EssentiaException("pairwiseDistance: found empty array as input!");
+
+  size_t mSize = m.size();
+  size_t nSize = n.size();
+  std::vector<std::vector<T> > pdist(mSize, std::vector<T>(nSize));
+  for (size_t i=0; i<mSize; i++) {
+      for (size_t j=0; j<nSize; j++) {
+          Real item = dotProduct(m[i], m[i]) - 2*dotProduct(m[i], n[j]) + dotProduct(n[j], n[j]);
+          pdist[i][j] = sqrt(item);
+      }
+  }
+  if (pdist.empty())
+      throw EssentiaException("pairwiseDistance: outputs an empty similarity matrix!");
+  return pdist;
+}
+
+/**
+ * Sets `squeezeShape`, `summarizerShape`, `broadcastShape` to perform operations 
+ * on a Tensor with the shape of `tensor` along the `axis` dimension.
+ */
+template <typename T>
+void tensorGeometricalInfo(const Tensor<T>& tensor, int& axis,
+                           std::array<Eigen::Index, TENSORRANK - 1>& squeezeShape,
+                           std::array<Eigen::Index, TENSORRANK>& summarizerShape,
+                           std::array<Eigen::Index, TENSORRANK>& broadcastShape) {
+  // To perform tensor operations along an specific axis we need to get
+  // some geometrical information before:
+
+  // First, an array with dimensions to squeeze (all but the axis).
+  int i = 0;
+  for (int j = 0; j < TENSORRANK; j++) {
+    if (j != axis) {
+      squeezeShape[i] = j;
+      i++;
+    }
+  }
+
+  // An array with all singleton dimension but the axis of interest.
+  summarizerShape = {1, 1, 1, 1};
+  summarizerShape[axis] = tensor.dimension(axis);
+
+  // An array with the number of times we need to copy the accumulator
+  // tensors per dimension in order to match the input tensor shape.
+  broadcastShape = tensor.dimensions();
+  broadcastShape[axis] = 1;
+}
+
+/**
+ * Returns the mean of a tensor.
+ */
+template <typename T>
+T mean(const Tensor<T>& tensor) {
+  return (T)((TensorScalar)tensor.mean())(0);
+}
+
+/**
+ * Returns the mean of a tensor along the given axis.
+ */
+template <typename T>
+Tensor<T> mean(const Tensor<T>& tensor, int axis) {
+  std::array<Eigen::Index, TENSORRANK - 1> squeezeShape;
+  std::array<Eigen::Index, TENSORRANK> summarizerShape, broadcastShape;
+
+  tensorGeometricalInfo(tensor, axis, squeezeShape, summarizerShape, broadcastShape);
+  Tensor1D means = tensor.mean(squeezeShape);
+
+  return TensorMap<Real>(means.data(), summarizerShape);
+}
+
+/**
+ * Returns the standard deviation of a tensor.
+ */
+template <typename T>
+T stddev(const Tensor<T>& tensor, const T mean) {
+  // Substract the mean.
+  Tensor<Real> tmp = tensor - tensor.constant(mean);
+  // Sum of squares.
+  Real sos = ((TensorScalar)tmp.pow(2).sum())(0);
+
+  return sqrt(sos / tensor.size());
+}
+
+/**
+ * Returns the standard deviation of a tensor along the given axis.
+ */
+template <typename T>
+Tensor<T> stddev(const Tensor<T>& tensor, const Tensor<T> mean, int axis) {
+  std::array<Eigen::Index, TENSORRANK - 1> squeezeShape;
+  std::array<Eigen::Index, TENSORRANK> summarizerShape, broadcastShape;
+
+  tensorGeometricalInfo(tensor, axis, squeezeShape, summarizerShape, broadcastShape);
+
+  // Get the number of elements on each sub-tensor.
+  Real normalization = tensor.size() / tensor.dimension(axis);
+
+  // Substract the means along the axis using broadcast to replicate
+  // them along the rest of dimensions.
+  Tensor<Real> tmp = tensor - mean.broadcast(broadcastShape);
+
+  // Cumpute the sum of squares.
+  Tensor1D sos = tmp.pow(2).sum(squeezeShape);
+
+  // Compute the standard deviations and put them into a Tensor along the axis.
+  Tensor1D stds = (sos / normalization).sqrt();
+
+  return TensorMap<Real>(stds.data(), summarizerShape);
+}
+
+/**
+ * Returns the minimum of a tensor.
+ */
+template <typename T>
+T tensorMin(const Tensor<T>& tensor) {
+  return (T)((TensorScalar)tensor.minimum())(0);
+}
+
+/**
+ * Returns the minimum of a tensor along the given axis.
+ */
+template <typename T>
+Tensor<T> tensorMin(const Tensor<T>& tensor, int axis) {
+  std::array<Eigen::Index, TENSORRANK - 1> squeezeShape;
+  std::array<Eigen::Index, TENSORRANK> summarizerShape, broadcastShape;
+
+  tensorGeometricalInfo(tensor, axis, squeezeShape, summarizerShape, broadcastShape);
+  Tensor1D minima = tensor.minimum(squeezeShape);
+
+  return TensorMap<Real>(minima.data(), summarizerShape);
+}
+
+/**
+ * Returns the maximum of a tensor.
+ */
+template <typename T>
+T tensorMax(const Tensor<T>& tensor) {
+  return (T)((TensorScalar)tensor.maximum())(0);
+}
+
+/**
+ * Returns the maximum of a tensor along the given axis.
+ */
+template <typename T>
+Tensor<T> tensorMax(const Tensor<T>& tensor, int axis) {
+  std::array<Eigen::Index, TENSORRANK - 1> squeezeShape;
+  std::array<Eigen::Index, TENSORRANK> summarizerShape, broadcastShape;
+
+  tensorGeometricalInfo(tensor, axis, squeezeShape, summarizerShape, broadcastShape);
+  Tensor1D maxima = tensor.maximum(squeezeShape);
+
+  return TensorMap<Real>(maxima.data(), summarizerShape);
+}
+
+/**
+ * Rounds x up to the desired decimal place.
+ */
+template <typename T>
+T roundToDecimal(T x, int decimal) {
+  if (decimal < 0) {
+    throw EssentiaException("the number of decimals has to be 0 or positive");
+  }
+  return round(pow(10, decimal) * x) / pow(10, decimal);
 }
 
 } // namespace essentia
