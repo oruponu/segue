@@ -35,8 +35,13 @@ class PlayerViewModel extends Notifier<PlayerState> {
               bpm: cached.bpm,
               key: cached.musicalKey,
               styles: styles,
-              isAnalyzing: false,
+              isAnalyzing: styles == null,
             );
+            if (styles != null) return;
+
+            await _classifyStyle(item.id);
+            if (state.playingMediaItem?.id != item.id) return;
+            state = state.copyWith(isAnalyzing: false);
             return;
           }
 
