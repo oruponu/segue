@@ -30,6 +30,7 @@ target_link_libraries(essentia_bridge PRIVATE
     ${LIBS_DIR}/libavformat.a
     ${LIBS_DIR}/libavutil.a
     ${LIBS_DIR}/libswresample.a
+    ${LIBS_DIR}/libsamplerate.a
     ${LIBS_DIR}/libfftw3f.a
     ${LIBS_DIR}/libyaml-cpp.a
 )
