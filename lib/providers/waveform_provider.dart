@@ -7,7 +7,12 @@ final waveformProvider = StreamProvider.autoDispose<Waveform?>((ref) async* {
   final handler = ref.watch(audioHandlerProvider);
 
   await for (final item in handler.mediaItem) {
-    final wavePath = item?.extras?['wavePath'] as String?;
+    if (item == null) {
+      yield null;
+      continue;
+    }
+
+    final wavePath = item.extras?['wavePath'] as String?;
     if (wavePath == null || wavePath.isEmpty) {
       yield null;
       continue;
@@ -16,7 +21,15 @@ final waveformProvider = StreamProvider.autoDispose<Waveform?>((ref) async* {
     final file = File(wavePath);
     if (!await file.exists()) {
       yield null;
-      continue;
+      try {
+        await JustWaveform.extract(
+          audioInFile: File(item.id),
+          waveOutFile: file,
+        ).drain();
+      } catch (_) {
+        yield null;
+        continue;
+      }
     }
 
     yield await JustWaveform.parse(file);
