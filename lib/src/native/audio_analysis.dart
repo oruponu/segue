@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:developer' as dev;
 import 'dart:ffi';
 import 'dart:isolate';
@@ -50,6 +51,27 @@ class StylePrediction {
       for (final e in counts.entries)
         if (e.value > 1) e.key,
     };
+  }
+
+  static String listToJson(List<StylePrediction> predictions) {
+    return jsonEncode([
+      for (final prediction in predictions)
+        {
+          'labelIndex': prediction.labelIndex,
+          'confidence': prediction.confidence,
+        },
+    ]);
+  }
+
+  static List<StylePrediction> listFromJson(String json) {
+    final list = (jsonDecode(json) as List).cast<Map<String, dynamic>>();
+    return [
+      for (final entry in list)
+        fromLabelIndex(
+          entry['labelIndex'] as int,
+          (entry['confidence'] as num).toDouble(),
+        ),
+    ];
   }
 
   static StylePrediction fromLabelIndex(int index, double confidence) {
