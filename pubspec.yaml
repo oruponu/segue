@@ -50,6 +50,7 @@ dependencies:
   ffi: ^2.1.0
   drift: ^2.31.0
   drift_flutter: ^0.2.8
+  path: ^1.9.1
 
 dev_dependencies:
   flutter_test:
