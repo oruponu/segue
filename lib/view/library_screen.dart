@@ -74,8 +74,9 @@ class LibraryScreen extends ConsumerWidget {
                       leading: _buildThumbnail(album.artUri),
                       title: Text(
                         album.name,
-                        maxLines: 1,
+                        style: const TextStyle(height: 1.2),
                         overflow: TextOverflow.ellipsis,
+                        maxLines: 2,
                       ),
                       subtitle: Row(
                         children: [
@@ -113,7 +114,12 @@ class LibraryScreen extends ConsumerWidget {
         final album = state.albums[index];
         return ListTile(
           leading: _buildThumbnail(album.artUri),
-          title: Text(album.name, maxLines: 1, overflow: TextOverflow.ellipsis),
+          title: Text(
+            album.name,
+            style: const TextStyle(height: 1.2),
+            overflow: TextOverflow.ellipsis,
+            maxLines: 2,
+          ),
           subtitle: Row(
             children: [
               Expanded(
