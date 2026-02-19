@@ -82,7 +82,15 @@ int decode_audio(const char* path, std::vector<float>& out_samples, int target_s
   swr_alloc_set_opts2(&swr_ctx, &out_ch_layout, AV_SAMPLE_FMT_FLT, target_sr, &in_ch_layout,
                       codec_ctx->sample_fmt, codec_ctx->sample_rate, 0, nullptr);
 
+  // FFmpeg デフォルトのエネルギー保存型ではなく単純平均でモノラル化
+  int in_channels = in_ch_layout.nb_channels;
   av_channel_layout_uninit(&in_ch_layout);
+
+  if (in_channels > 1) {
+    double coeff = 1.0 / in_channels;
+    std::vector<double> matrix(in_channels, coeff);
+    swr_set_matrix(swr_ctx, matrix.data(), in_channels);
+  }
 
   ret = swr_init(swr_ctx);
   if (ret < 0) {
