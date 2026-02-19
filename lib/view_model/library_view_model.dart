@@ -5,6 +5,7 @@ import 'package:drift/drift.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as p;
 import 'package:permission_handler/permission_handler.dart';
 import 'package:segue/database/database.dart';
 import 'package:segue/model/album.dart';
@@ -192,7 +193,7 @@ class LibraryViewModel extends Notifier<LibraryState> {
           '${tempDir.path}/${metadata.file.path.hashCode}.wave',
         );
 
-        final title = metadata.title ?? "Unknown Title";
+        final title = metadata.title ?? p.basenameWithoutExtension(file.path);
         final durationMs = metadata.duration?.inMilliseconds;
 
         mediaItems.add(
