@@ -156,6 +156,7 @@ class LibraryViewModel extends Notifier<LibraryState> {
                 : null,
             artUri: artUri,
             extras: {
+              'discNumber': cached.discNumber,
               'trackNumber': cached.trackNumber,
               'wavePath': cached.waveCachePath,
             },
@@ -208,6 +209,7 @@ class LibraryViewModel extends Notifier<LibraryState> {
             duration: metadata.duration,
             artUri: artUri,
             extras: {
+              'discNumber': metadata.discNumber,
               'trackNumber': metadata.trackNumber,
               'wavePath': waveFile.path,
             },
@@ -220,6 +222,7 @@ class LibraryViewModel extends Notifier<LibraryState> {
             title: Value(title),
             album: Value(metadata.album),
             artist: Value(metadata.artist),
+            discNumber: Value(metadata.discNumber),
             trackNumber: Value(metadata.trackNumber),
             durationMs: Value(durationMs),
             artCachePath: Value(artCachePath),

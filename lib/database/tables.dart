@@ -5,6 +5,7 @@ class Tracks extends Table {
   TextColumn get title => text().withDefault(const Constant('Unknown Title'))();
   TextColumn get album => text().nullable()();
   TextColumn get artist => text().nullable()();
+  IntColumn get discNumber => integer().nullable()();
   IntColumn get trackNumber => integer().nullable()();
   IntColumn get durationMs => integer().nullable()();
   TextColumn get artCachePath => text().nullable()();
