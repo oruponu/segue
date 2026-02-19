@@ -49,6 +49,7 @@ dependencies:
   just_waveform: ^0.0.7
   ffi: ^2.1.0
   drift: ^2.31.0
+  drift_flutter: ^0.2.8
 
 dev_dependencies:
   flutter_test:
