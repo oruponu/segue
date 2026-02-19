@@ -1,14 +1,17 @@
 import 'dart:io';
 import 'package:audio_metadata_reader/audio_metadata_reader.dart';
 import 'package:audio_service/audio_service.dart';
+import 'package:drift/drift.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:just_waveform/just_waveform.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:segue/database/database.dart';
 import 'package:segue/model/album.dart';
 import 'package:segue/model/library_state.dart';
 import 'package:segue/providers/audio_handler_provider.dart';
+import 'package:segue/providers/database_provider.dart';
 
 final libraryViewModelProvider =
     NotifierProvider<LibraryViewModel, LibraryState>(() {
@@ -130,55 +133,101 @@ class LibraryViewModel extends Notifier<LibraryState> {
 
     state = state.copyWith(scanTotal: files.length, scanProcessed: 0);
 
+    final dao = ref.read(trackDaoProvider);
+    final cachedTracks = await dao.getTracksByDirectory(path);
+    final cacheMap = {for (final track in cachedTracks) track.filePath: track};
+
     final mediaItems = <MediaItem>[];
     final tempDir = await getTemporaryDirectory();
     for (final file in files) {
-      final AudioMetadata metadata;
-      try {
-        metadata = readMetadata(file, getImage: true);
-      } catch (_) {
-        state = state.copyWith(scanProcessed: state.scanProcessed + 1);
-        continue;
-      }
-
-      Uri? artUri;
-      if (metadata.pictures.isNotEmpty) {
-        final picture = metadata.pictures.first;
-        final artFile = File(
-          '${tempDir.path}/${metadata.file.path.hashCode}.jpg',
+      final cached = cacheMap[file.path];
+      if (cached != null) {
+        final artUri = cached.artCachePath != null
+            ? Uri.file(cached.artCachePath!)
+            : null;
+        mediaItems.add(
+          MediaItem(
+            id: cached.filePath,
+            title: cached.title,
+            album: cached.album,
+            artist: cached.artist,
+            duration: cached.durationMs != null
+                ? Duration(milliseconds: cached.durationMs!)
+                : null,
+            artUri: artUri,
+            extras: {
+              'trackNumber': cached.trackNumber,
+              'wavePath': cached.waveCachePath,
+            },
+          ),
         );
-        await artFile.writeAsBytes(picture.bytes);
-        artUri = Uri.file(artFile.path);
-      }
-
-      final waveFile = File(
-        '${tempDir.path}/${metadata.file.path.hashCode}.wave',
-      );
-      if (!await waveFile.exists()) {
+      } else {
+        final AudioMetadata metadata;
         try {
-          await JustWaveform.extract(
-            audioInFile: metadata.file,
-            waveOutFile: waveFile,
-          ).drain();
+          metadata = readMetadata(file, getImage: true);
         } catch (_) {
-          // デコード非対応フォーマットはスキップ
+          state = state.copyWith(scanProcessed: state.scanProcessed + 1);
+          continue;
         }
-      }
 
-      mediaItems.add(
-        MediaItem(
-          id: metadata.file.path,
-          title: metadata.title ?? "Unknown Title",
-          album: metadata.album,
-          artist: metadata.artist,
-          duration: metadata.duration,
-          artUri: artUri,
-          extras: {
-            'trackNumber': metadata.trackNumber,
-            'wavePath': waveFile.path,
-          },
-        ),
-      );
+        Uri? artUri;
+        String? artCachePath;
+        if (metadata.pictures.isNotEmpty) {
+          final picture = metadata.pictures.first;
+          final artFile = File(
+            '${tempDir.path}/${metadata.file.path.hashCode}.jpg',
+          );
+          await artFile.writeAsBytes(picture.bytes);
+          artUri = Uri.file(artFile.path);
+          artCachePath = artFile.path;
+        }
+
+        final waveFile = File(
+          '${tempDir.path}/${metadata.file.path.hashCode}.wave',
+        );
+        if (!await waveFile.exists()) {
+          try {
+            await JustWaveform.extract(
+              audioInFile: metadata.file,
+              waveOutFile: waveFile,
+            ).drain();
+          } catch (_) {
+            // デコード非対応フォーマットはスキップ
+          }
+        }
+
+        final title = metadata.title ?? "Unknown Title";
+        final durationMs = metadata.duration?.inMilliseconds;
+
+        mediaItems.add(
+          MediaItem(
+            id: metadata.file.path,
+            title: title,
+            album: metadata.album,
+            artist: metadata.artist,
+            duration: metadata.duration,
+            artUri: artUri,
+            extras: {
+              'trackNumber': metadata.trackNumber,
+              'wavePath': waveFile.path,
+            },
+          ),
+        );
+
+        await dao.upsertTrack(
+          TracksCompanion(
+            filePath: Value(file.path),
+            title: Value(title),
+            album: Value(metadata.album),
+            artist: Value(metadata.artist),
+            trackNumber: Value(metadata.trackNumber),
+            durationMs: Value(durationMs),
+            artCachePath: Value(artCachePath),
+            waveCachePath: Value(waveFile.path),
+            scannedAt: Value(DateTime.now()),
+          ),
+        );
+      }
 
       final albums = _groupByAlbum(mediaItems);
       state = state.copyWith(
