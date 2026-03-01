@@ -120,6 +120,22 @@ class SpectrumResult {
   }
 }
 
+class StereoPeakResult {
+  final Float32List leftPeaks;
+  final Float32List rightPeaks;
+  final Uint8List clipFlags; // bit0=left clipped, bit1=right clipped
+  final int numFrames;
+  final double hopDuration;
+
+  const StereoPeakResult({
+    required this.leftPeaks,
+    required this.rightPeaks,
+    required this.clipFlags,
+    required this.numFrames,
+    required this.hopDuration,
+  });
+}
+
 class AudioAnalysis {
   static DynamicLibrary? _lib;
   static late final EssentiaCancelFlagCreate _cancelFlagCreate;
@@ -130,6 +146,7 @@ class AudioAnalysis {
   static Pointer<EssentiaCancelFlag>? _currentCancelFlag;
   static Pointer<EssentiaCancelFlag>? _currentStyleCancelFlag;
   static Pointer<EssentiaCancelFlag>? _currentSpectrumCancelFlag;
+  static Pointer<EssentiaCancelFlag>? _currentStereoPeakCancelFlag;
 
   static void ensureInitialized() {
     if (_lib != null) return;
@@ -363,6 +380,42 @@ class AudioAnalysis {
     }
   }
 
+  static Future<StereoPeakResult?> computeStereoPeaks({
+    required String pathStr,
+    int frameSize = 4096,
+    int hopSize = 1024,
+  }) async {
+    ensureInitialized();
+
+    final oldFlag = _currentStereoPeakCancelFlag;
+    if (oldFlag != null) {
+      _cancelFlagSet(oldFlag);
+    }
+
+    final flag = _cancelFlagCreate();
+    _currentStereoPeakCancelFlag = flag;
+    final flagAddress = flag.address;
+
+    try {
+      final result = await Isolate.run(() {
+        return _runComputeStereoPeaks(pathStr, frameSize, hopSize, flagAddress);
+      });
+      return result;
+    } finally {
+      _cancelFlagDestroy(flag);
+      if (_currentStereoPeakCancelFlag == flag) {
+        _currentStereoPeakCancelFlag = null;
+      }
+    }
+  }
+
+  static void cancelComputeStereoPeaks() {
+    final flag = _currentStereoPeakCancelFlag;
+    if (flag != null) {
+      _cancelFlagSet(flag);
+    }
+  }
+
   static SpectrumResult? _runComputeSpectrum(
     String pathStr,
     int numBands,
@@ -416,6 +469,72 @@ class AudioAnalysis {
         bands: bands,
         numFrames: data.numFrames,
         numBands: data.numBands,
+        hopDuration: data.hopDuration,
+      );
+
+      free(dataPtr);
+      return result;
+    } finally {
+      malloc.free(pathPtr);
+    }
+  }
+
+  static StereoPeakResult? _runComputeStereoPeaks(
+    String pathStr,
+    int frameSize,
+    int hopSize,
+    int flagAddress,
+  ) {
+    dev.log('computeStereoPeaks: path=$pathStr', name: 'Essentia');
+
+    final lib = openEssentiaLibrary();
+    final compute = lib
+        .lookupFunction<
+          EssentiaComputeStereoPeaksNative,
+          EssentiaComputeStereoPeaks
+        >('essentia_compute_stereo_peaks');
+    final free = lib
+        .lookupFunction<EssentiaFreeStereoPeaksNative, EssentiaFreeStereoPeaks>(
+          'essentia_free_stereo_peaks',
+        );
+
+    final pathPtr = pathStr.toNativeUtf8();
+    final flag = Pointer<EssentiaCancelFlag>.fromAddress(flagAddress);
+
+    try {
+      final dataPtr = compute(pathPtr, frameSize, hopSize, flag);
+
+      if (dataPtr == nullptr) {
+        dev.log('computeStereoPeaks: null result', name: 'Essentia');
+        return null;
+      }
+
+      final data = dataPtr.ref;
+      dev.log(
+        'stereo peaks result: errorCode=${data.errorCode} '
+        '(${_errorMessages[data.errorCode] ?? "unknown"}), '
+        'frames=${data.numFrames}',
+        name: 'Essentia',
+      );
+
+      if (data.errorCode != 0) {
+        free(dataPtr);
+        return null;
+      }
+
+      final numFrames = data.numFrames;
+      final leftPeaks = Float32List(numFrames);
+      final rightPeaks = Float32List(numFrames);
+      final clipFlags = Uint8List(numFrames);
+      leftPeaks.setAll(0, data.leftPeaks.asTypedList(numFrames));
+      rightPeaks.setAll(0, data.rightPeaks.asTypedList(numFrames));
+      clipFlags.setAll(0, data.clipFlags.asTypedList(numFrames));
+
+      final result = StereoPeakResult(
+        leftPeaks: leftPeaks,
+        rightPeaks: rightPeaks,
+        clipFlags: clipFlags,
+        numFrames: numFrames,
         hopDuration: data.hopDuration,
       );
 

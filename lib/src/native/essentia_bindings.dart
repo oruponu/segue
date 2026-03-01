@@ -116,3 +116,37 @@ typedef EssentiaComputeSpectrum =
 
 typedef EssentiaFreeSpectrumNative = Void Function(Pointer<SpectrumData> data);
 typedef EssentiaFreeSpectrum = void Function(Pointer<SpectrumData> data);
+
+final class StereoPeakData extends Struct {
+  external Pointer<Float> leftPeaks;
+  external Pointer<Float> rightPeaks;
+  external Pointer<Uint8> clipFlags;
+
+  @Int32()
+  external int numFrames;
+
+  @Float()
+  external double hopDuration;
+
+  @Int32()
+  external int errorCode;
+}
+
+typedef EssentiaComputeStereoPeaksNative =
+    Pointer<StereoPeakData> Function(
+      Pointer<Utf8> path,
+      Int32 frameSize,
+      Int32 hopSize,
+      Pointer<EssentiaCancelFlag> cancelFlag,
+    );
+typedef EssentiaComputeStereoPeaks =
+    Pointer<StereoPeakData> Function(
+      Pointer<Utf8> path,
+      int frameSize,
+      int hopSize,
+      Pointer<EssentiaCancelFlag> cancelFlag,
+    );
+
+typedef EssentiaFreeStereoPeaksNative =
+    Void Function(Pointer<StereoPeakData> data);
+typedef EssentiaFreeStereoPeaks = void Function(Pointer<StereoPeakData> data);
