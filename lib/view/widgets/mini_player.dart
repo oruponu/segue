@@ -8,7 +8,10 @@ import 'package:segue/providers/player_sheet_controller_provider.dart';
 import 'package:segue/providers/position_provider.dart';
 
 class MiniPlayer extends ConsumerWidget {
-  const MiniPlayer({super.key});
+  final bool topPosition;
+  final VoidCallback? onTap;
+
+  const MiniPlayer({super.key, this.topPosition = false, this.onTap});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -23,19 +26,22 @@ class MiniPlayer extends ConsumerWidget {
         }
 
         return GestureDetector(
-          onTap: () {
-            ref.read(playerSheetControllerProvider.notifier).expand();
-          },
+          onTap:
+              onTap ??
+              () {
+                ref.read(playerSheetControllerProvider.notifier).expand();
+              },
           child: Container(
             color: Theme.of(
               context,
             ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.95),
             child: SafeArea(
-              top: false,
+              top: topPosition,
+              bottom: !topPosition,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  _buildProgressBar(context, ref),
+                  if (!topPosition) _buildProgressBar(context, ref),
                   SizedBox(
                     height: 72,
                     child: Row(
@@ -86,13 +92,14 @@ class MiniPlayer extends ConsumerWidget {
                       ],
                     ),
                   ),
+                  if (topPosition) _buildProgressBar(context, ref),
                 ],
               ),
             ),
           ),
         );
       },
-    ); // Placeholder
+    );
   }
 
   Widget _buildProgressBar(BuildContext context, WidgetRef ref) {
