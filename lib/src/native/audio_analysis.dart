@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:developer' as dev;
 import 'dart:ffi';
 import 'dart:isolate';
+import 'dart:typed_data';
 
 import 'package:ffi/ffi.dart';
 
@@ -92,6 +93,33 @@ class StylePrediction {
   }
 }
 
+class SpectrumResult {
+  final Float32List bands;
+  final int numFrames;
+  final int numBands;
+  final double hopDuration;
+
+  const SpectrumResult({
+    required this.bands,
+    required this.numFrames,
+    required this.numBands,
+    required this.hopDuration,
+  });
+
+  Float32List getFrame(int index) {
+    return Float32List.sublistView(
+      bands,
+      index * numBands,
+      (index + 1) * numBands,
+    );
+  }
+
+  int frameIndexForTime(double seconds) {
+    final index = (seconds / hopDuration).floor();
+    return index.clamp(0, numFrames - 1);
+  }
+}
+
 class AudioAnalysis {
   static DynamicLibrary? _lib;
   static late final EssentiaCancelFlagCreate _cancelFlagCreate;
@@ -101,6 +129,7 @@ class AudioAnalysis {
 
   static Pointer<EssentiaCancelFlag>? _currentCancelFlag;
   static Pointer<EssentiaCancelFlag>? _currentStyleCancelFlag;
+  static Pointer<EssentiaCancelFlag>? _currentSpectrumCancelFlag;
 
   static void ensureInitialized() {
     if (_lib != null) return;
@@ -288,6 +317,112 @@ class AudioAnalysis {
     final flag = _currentStyleCancelFlag;
     if (flag != null) {
       _cancelFlagSet(flag);
+    }
+  }
+
+  static Future<SpectrumResult?> computeSpectrum({
+    required String pathStr,
+    int numBands = 32,
+    int frameSize = 4096,
+    int hopSize = 1024,
+  }) async {
+    ensureInitialized();
+
+    final oldFlag = _currentSpectrumCancelFlag;
+    if (oldFlag != null) {
+      _cancelFlagSet(oldFlag);
+    }
+
+    final flag = _cancelFlagCreate();
+    _currentSpectrumCancelFlag = flag;
+    final flagAddress = flag.address;
+
+    try {
+      final result = await Isolate.run(() {
+        return _runComputeSpectrum(
+          pathStr,
+          numBands,
+          frameSize,
+          hopSize,
+          flagAddress,
+        );
+      });
+      return result;
+    } finally {
+      _cancelFlagDestroy(flag);
+      if (_currentSpectrumCancelFlag == flag) {
+        _currentSpectrumCancelFlag = null;
+      }
+    }
+  }
+
+  static void cancelComputeSpectrum() {
+    final flag = _currentSpectrumCancelFlag;
+    if (flag != null) {
+      _cancelFlagSet(flag);
+    }
+  }
+
+  static SpectrumResult? _runComputeSpectrum(
+    String pathStr,
+    int numBands,
+    int frameSize,
+    int hopSize,
+    int flagAddress,
+  ) {
+    dev.log('computeSpectrum: path=$pathStr', name: 'Essentia');
+
+    final lib = openEssentiaLibrary();
+    final compute = lib
+        .lookupFunction<EssentiaComputeSpectrumNative, EssentiaComputeSpectrum>(
+          'essentia_compute_spectrum',
+        );
+    final free = lib
+        .lookupFunction<EssentiaFreeSpectrumNative, EssentiaFreeSpectrum>(
+          'essentia_free_spectrum',
+        );
+
+    final pathPtr = pathStr.toNativeUtf8();
+    final flag = Pointer<EssentiaCancelFlag>.fromAddress(flagAddress);
+
+    try {
+      final dataPtr = compute(pathPtr, numBands, frameSize, hopSize, flag);
+
+      if (dataPtr == nullptr) {
+        dev.log('computeSpectrum: null result', name: 'Essentia');
+        return null;
+      }
+
+      final data = dataPtr.ref;
+      dev.log(
+        'spectrum result: errorCode=${data.errorCode} '
+        '(${_errorMessages[data.errorCode] ?? "unknown"}), '
+        'frames=${data.numFrames}, bands=${data.numBands}',
+        name: 'Essentia',
+      );
+
+      if (data.errorCode != 0) {
+        free(dataPtr);
+        return null;
+      }
+
+      // ネイティブメモリ解放前に Dart 側へコピー
+      final totalFloats = data.numFrames * data.numBands;
+      final bands = Float32List(totalFloats);
+      final nativeList = data.bands.asTypedList(totalFloats);
+      bands.setAll(0, nativeList);
+
+      final result = SpectrumResult(
+        bands: bands,
+        numFrames: data.numFrames,
+        numBands: data.numBands,
+        hopDuration: data.hopDuration,
+      );
+
+      free(dataPtr);
+      return result;
+    } finally {
+      malloc.free(pathPtr);
     }
   }
 

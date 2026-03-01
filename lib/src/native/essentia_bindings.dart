@@ -80,3 +80,39 @@ typedef EssentiaClassifyStyle =
       Pointer<Utf8> modelPath,
       Pointer<EssentiaCancelFlag> cancelFlag,
     );
+
+final class SpectrumData extends Struct {
+  external Pointer<Float> bands;
+
+  @Int32()
+  external int numFrames;
+
+  @Int32()
+  external int numBands;
+
+  @Float()
+  external double hopDuration;
+
+  @Int32()
+  external int errorCode;
+}
+
+typedef EssentiaComputeSpectrumNative =
+    Pointer<SpectrumData> Function(
+      Pointer<Utf8> path,
+      Int32 numBands,
+      Int32 frameSize,
+      Int32 hopSize,
+      Pointer<EssentiaCancelFlag> cancelFlag,
+    );
+typedef EssentiaComputeSpectrum =
+    Pointer<SpectrumData> Function(
+      Pointer<Utf8> path,
+      int numBands,
+      int frameSize,
+      int hopSize,
+      Pointer<EssentiaCancelFlag> cancelFlag,
+    );
+
+typedef EssentiaFreeSpectrumNative = Void Function(Pointer<SpectrumData> data);
+typedef EssentiaFreeSpectrum = void Function(Pointer<SpectrumData> data);
