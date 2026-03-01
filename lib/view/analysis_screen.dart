@@ -1,9 +1,15 @@
+import 'dart:math' as math;
+import 'dart:typed_data';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:segue/model/analysis_tab.dart';
 import 'package:segue/providers/analysis_sheet_controller_provider.dart';
+import 'package:segue/providers/audio_handler_provider.dart';
+import 'package:segue/providers/spectrum_provider.dart';
 import 'package:segue/view_model/analysis_view_model.dart';
 import 'package:segue/view/widgets/mini_player.dart';
+import 'package:segue/view/widgets/spectrum_painter.dart';
 
 class AnalysisScreen extends ConsumerStatefulWidget {
   const AnalysisScreen({super.key});
@@ -12,8 +18,109 @@ class AnalysisScreen extends ConsumerStatefulWidget {
   ConsumerState<AnalysisScreen> createState() => _AnalysisScreenState();
 }
 
-class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
+class _AnalysisScreenState extends ConsumerState<AnalysisScreen>
+    with SingleTickerProviderStateMixin {
+  static const _minDb = -50.0;
+  static const _decayRate = 25.0; // dB per second (full range in 2 seconds)
+
   AnalysisTab _selectedTab = AnalysisTab.realtime;
+  late final Ticker _ticker;
+  Float32List? _currentFrame;
+  Float32List? _displayFrame;
+  Duration? _lastTickTime;
+
+  @override
+  void initState() {
+    super.initState();
+    _ticker = createTicker(_onTick);
+    _ticker.start();
+  }
+
+  @override
+  void dispose() {
+    _ticker.dispose();
+    super.dispose();
+  }
+
+  void _onTick(Duration elapsed) {
+    final dt = _lastTickTime != null
+        ? (elapsed - _lastTickTime!).inMicroseconds / 1000000.0
+        : 1.0 / 60.0;
+    _lastTickTime = elapsed;
+    final clampedDt = dt.clamp(0.001, 0.1);
+
+    Float32List? targetFrame;
+    final spectrumData = ref.read(spectrumProvider).value;
+    if (spectrumData != null && spectrumData.numFrames > 0) {
+      final handler = ref.read(audioHandlerProvider);
+      final playbackState = handler.playbackState.value;
+
+      if (playbackState.playing) {
+        Duration currentPosition = playbackState.updatePosition;
+        final sinceUpdate = DateTime.now().difference(playbackState.updateTime);
+        currentPosition += sinceUpdate * playbackState.speed;
+        final seconds = currentPosition.inMicroseconds / 1000000.0;
+
+        final exactIndex = seconds / spectrumData.hopDuration;
+        final index0 = exactIndex.floor().clamp(0, spectrumData.numFrames - 1);
+        final index1 = (index0 + 1).clamp(0, spectrumData.numFrames - 1);
+        final t = (exactIndex - index0).clamp(0.0, 1.0);
+
+        final frame0 = spectrumData.getFrame(index0);
+        final frame1 = spectrumData.getFrame(index1);
+        targetFrame = Float32List(spectrumData.numBands);
+        for (int i = 0; i < spectrumData.numBands; i++) {
+          targetFrame[i] = frame0[i] + (frame1[i] - frame0[i]) * t;
+        }
+      }
+    }
+
+    final numBands = targetFrame?.length ?? _displayFrame?.length ?? 0;
+    if (numBands == 0) {
+      if (_currentFrame != null) {
+        setState(() => _currentFrame = null);
+      }
+      return;
+    }
+
+    final prev = _displayFrame;
+    final result = Float32List(numBands);
+    bool anyActive = false;
+
+    for (int i = 0; i < numBands; i++) {
+      final target = (targetFrame != null && i < targetFrame.length)
+          ? targetFrame[i]
+          : _minDb;
+      final current = (prev != null && i < prev.length) ? prev[i] : _minDb;
+
+      if (target >= current) {
+        result[i] = target;
+      } else {
+        result[i] = math.max(target, current - _decayRate * clampedDt);
+      }
+      if (result[i] > _minDb) anyActive = true;
+    }
+
+    _displayFrame = result;
+    if (anyActive) {
+      setState(() => _currentFrame = result);
+    } else if (_currentFrame != null) {
+      _displayFrame = null;
+      setState(() => _currentFrame = null);
+    }
+  }
+
+  void _onTabChanged(AnalysisTab tab) {
+    setState(() {
+      _selectedTab = tab;
+    });
+    if (tab == AnalysisTab.realtime) {
+      _lastTickTime = null;
+      if (!_ticker.isActive) _ticker.start();
+    } else {
+      _ticker.stop();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -41,9 +148,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
               ],
               selected: {_selectedTab},
               onSelectionChanged: (selected) {
-                setState(() {
-                  _selectedTab = selected.first;
-                });
+                _onTabChanged(selected.first);
               },
             ),
           ),
@@ -53,14 +158,23 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
               ? (state.isAnalyzing
                     ? const Center(child: CircularProgressIndicator())
                     : _buildContent(context, state))
-              : const Center(
-                  child: Text(
-                    'リアルタイム表示',
-                    style: TextStyle(color: Colors.white54),
-                  ),
-                ),
+              : _buildRealtimeTab(),
         ),
       ],
+    );
+  }
+
+  Widget _buildRealtimeTab() {
+    ref.watch(spectrumProvider);
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Center(
+        child: SizedBox(
+          width: double.infinity,
+          height: 220,
+          child: CustomPaint(painter: SpectrumPainter(frame: _currentFrame)),
+        ),
+      ),
     );
   }
 
