@@ -8,6 +8,7 @@ add_library(essentia_bridge SHARED
     src/essentia_bridge.cpp
     src/audio_decode.cpp
     src/style_classifier.cpp
+    src/spectrum_analyzer.cpp
 )
 
 target_include_directories(essentia_bridge PRIVATE
