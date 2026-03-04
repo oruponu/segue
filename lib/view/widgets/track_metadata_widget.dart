@@ -58,7 +58,7 @@ class TrackMetadataWidget extends ConsumerWidget {
           ),
         ),
         const SizedBox(height: 8),
-        _buildAnalysisChips(state),
+        _buildAnalysisChips(context, state),
       ],
     );
   }
@@ -73,7 +73,7 @@ class TrackMetadataWidget extends ConsumerWidget {
     return const Icon(Icons.music_note, size: 100, color: Colors.white24);
   }
 
-  Widget _buildAnalysisChips(PlayerState state) {
+  Widget _buildAnalysisChips(BuildContext context, PlayerState state) {
     if (state.isAnalyzing) {
       return const SizedBox(
         height: 48,
@@ -108,7 +108,9 @@ class TrackMetadataWidget extends ConsumerWidget {
             if (state.bpm != null) _chip("BPM ${state.bpm!.round()}"),
             if (state.key != null) _chip(state.key!),
             if (hasStyles)
-              ...state.styles!.take(3).map((s) => _styleChip(s.displayName)),
+              ...state.styles!
+                  .take(3)
+                  .map((s) => _styleChip(context, s.displayName)),
           ],
         ),
       ),
@@ -125,13 +127,13 @@ class TrackMetadataWidget extends ConsumerWidget {
     );
   }
 
-  Widget _styleChip(String label) {
+  Widget _styleChip(BuildContext context, String label) {
     return Chip(
       label: Text(label),
       labelStyle: const TextStyle(fontSize: 13, color: Colors.white70),
       side: BorderSide.none,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      backgroundColor: Colors.purple.withValues(alpha: 0.25),
+      backgroundColor: Theme.of(context).colorScheme.primaryContainer,
     );
   }
 }
