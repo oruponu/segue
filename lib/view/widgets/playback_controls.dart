@@ -146,17 +146,18 @@ class PlaybackControls extends ConsumerWidget {
                           )
                           .toList(),
                       onSelected: (value) => handler.setSpeed(value),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          vertical: 8,
-                          horizontal: 12,
-                        ),
-                        child: Text(
-                          '${speed}x',
-                          style: TextStyle(
-                            color: isDefault
-                                ? null
-                                : Theme.of(context).colorScheme.primary,
+                      child: SizedBox(
+                        width: 72,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          child: Text(
+                            '${speed}x',
+                            style: TextStyle(
+                              color: isDefault
+                                  ? null
+                                  : Theme.of(context).colorScheme.primary,
+                            ),
+                            textAlign: TextAlign.center,
                           ),
                         ),
                       ),
@@ -190,17 +191,18 @@ class PlaybackControls extends ConsumerWidget {
                           .toList(),
                       onSelected: (value) =>
                           handler.setPitch(_semitonesToPitch(value)),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          vertical: 8,
-                          horizontal: 12,
-                        ),
-                        child: Text(
-                          'Key ${_semitoneLabel(semitones)}',
-                          style: TextStyle(
-                            color: isDefault
-                                ? null
-                                : Theme.of(context).colorScheme.primary,
+                      child: SizedBox(
+                        width: 72,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          child: Text(
+                            'Key ${_semitoneLabel(semitones)}',
+                            style: TextStyle(
+                              color: isDefault
+                                  ? null
+                                  : Theme.of(context).colorScheme.primary,
+                            ),
+                            textAlign: TextAlign.center,
                           ),
                         ),
                       ),
