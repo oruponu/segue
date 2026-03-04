@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'package:audio_service/audio_service.dart' hide AudioHandler;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:segue/providers/audio_handler_provider.dart';
 
@@ -126,42 +127,53 @@ class PlaybackControls extends ConsumerWidget {
                   builder: (context, snapshot) {
                     final speed = snapshot.data ?? 1.0;
                     final isDefault = speed == 1.0;
-                    return Material(
-                      color: Colors.transparent,
-                      borderRadius: BorderRadius.circular(8),
-                      clipBehavior: Clip.antiAlias,
-                      child: PopupMenuButton<double>(
-                        itemBuilder: (context) => _speedPresets
-                            .map(
-                              (s) => PopupMenuItem(
-                                value: s,
-                                child: Text(
-                                  '${s}x',
-                                  style: TextStyle(
-                                    color: s == speed
-                                        ? Theme.of(context).colorScheme.primary
-                                        : null,
-                                    fontWeight: s == speed
-                                        ? FontWeight.bold
-                                        : null,
+                    return GestureDetector(
+                      onLongPress: isDefault
+                          ? null
+                          : () {
+                              HapticFeedback.mediumImpact();
+                              handler.setSpeed(1.0);
+                            },
+                      child: Material(
+                        color: Colors.transparent,
+                        borderRadius: BorderRadius.circular(8),
+                        clipBehavior: Clip.antiAlias,
+                        child: PopupMenuButton<double>(
+                          tooltip: '',
+                          itemBuilder: (context) => _speedPresets
+                              .map(
+                                (s) => PopupMenuItem(
+                                  value: s,
+                                  child: Text(
+                                    '${s}x',
+                                    style: TextStyle(
+                                      color: s == speed
+                                          ? Theme.of(
+                                              context,
+                                            ).colorScheme.primary
+                                          : null,
+                                      fontWeight: s == speed
+                                          ? FontWeight.bold
+                                          : null,
+                                    ),
                                   ),
                                 ),
+                              )
+                              .toList(),
+                          onSelected: (value) => handler.setSpeed(value),
+                          child: SizedBox(
+                            width: 72,
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              child: Text(
+                                '${speed}x',
+                                style: TextStyle(
+                                  color: isDefault
+                                      ? null
+                                      : Theme.of(context).colorScheme.primary,
+                                ),
+                                textAlign: TextAlign.center,
                               ),
-                            )
-                            .toList(),
-                        onSelected: (value) => handler.setSpeed(value),
-                        child: SizedBox(
-                          width: 72,
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 8),
-                            child: Text(
-                              '${speed}x',
-                              style: TextStyle(
-                                color: isDefault
-                                    ? null
-                                    : Theme.of(context).colorScheme.primary,
-                              ),
-                              textAlign: TextAlign.center,
                             ),
                           ),
                         ),
@@ -175,43 +187,54 @@ class PlaybackControls extends ConsumerWidget {
                     final pitch = snapshot.data ?? 1.0;
                     final semitones = _pitchToSemitones(pitch);
                     final isDefault = semitones == 0;
-                    return Material(
-                      color: Colors.transparent,
-                      borderRadius: BorderRadius.circular(8),
-                      clipBehavior: Clip.antiAlias,
-                      child: PopupMenuButton<int>(
-                        itemBuilder: (context) => _semitonePresets
-                            .map(
-                              (s) => PopupMenuItem(
-                                value: s,
-                                child: Text(
-                                  _semitoneLabel(s),
-                                  style: TextStyle(
-                                    color: s == semitones
-                                        ? Theme.of(context).colorScheme.primary
-                                        : null,
-                                    fontWeight: s == semitones
-                                        ? FontWeight.bold
-                                        : null,
+                    return GestureDetector(
+                      onLongPress: isDefault
+                          ? null
+                          : () {
+                              HapticFeedback.mediumImpact();
+                              handler.setPitch(1.0);
+                            },
+                      child: Material(
+                        color: Colors.transparent,
+                        borderRadius: BorderRadius.circular(8),
+                        clipBehavior: Clip.antiAlias,
+                        child: PopupMenuButton<int>(
+                          tooltip: '',
+                          itemBuilder: (context) => _semitonePresets
+                              .map(
+                                (s) => PopupMenuItem(
+                                  value: s,
+                                  child: Text(
+                                    _semitoneLabel(s),
+                                    style: TextStyle(
+                                      color: s == semitones
+                                          ? Theme.of(
+                                              context,
+                                            ).colorScheme.primary
+                                          : null,
+                                      fontWeight: s == semitones
+                                          ? FontWeight.bold
+                                          : null,
+                                    ),
                                   ),
                                 ),
+                              )
+                              .toList(),
+                          onSelected: (value) =>
+                              handler.setPitch(_semitonesToPitch(value)),
+                          child: SizedBox(
+                            width: 72,
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              child: Text(
+                                'Key ${_semitoneLabel(semitones)}',
+                                style: TextStyle(
+                                  color: isDefault
+                                      ? null
+                                      : Theme.of(context).colorScheme.primary,
+                                ),
+                                textAlign: TextAlign.center,
                               ),
-                            )
-                            .toList(),
-                        onSelected: (value) =>
-                            handler.setPitch(_semitonesToPitch(value)),
-                        child: SizedBox(
-                          width: 72,
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 8),
-                            child: Text(
-                              'Key ${_semitoneLabel(semitones)}',
-                              style: TextStyle(
-                                color: isDefault
-                                    ? null
-                                    : Theme.of(context).colorScheme.primary,
-                              ),
-                              textAlign: TextAlign.center,
                             ),
                           ),
                         ),
