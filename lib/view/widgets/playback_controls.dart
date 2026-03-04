@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:segue/providers/audio_handler_provider.dart';
 
+const _speedPresets = [0.5, 0.75, 1.0, 1.25, 1.5, 2.0];
+
 class PlaybackControls extends ConsumerWidget {
   const PlaybackControls({super.key});
 
@@ -18,81 +20,126 @@ class PlaybackControls extends ConsumerWidget {
         final processingState = playerState?.processingState;
         final playing = playerState?.playing;
 
-        return Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        return Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            StreamBuilder<bool>(
-              stream: handler.shuffleModeEnabledStream,
-              builder: (context, snapshot) {
-                final enabled = snapshot.data ?? false;
-                return IconButton(
-                  icon: Icon(
-                    Icons.shuffle,
-                    color: enabled
-                        ? Theme.of(context).colorScheme.primary
-                        : null,
-                  ),
-                  onPressed: () async {
-                    final newMode = enabled
-                        ? AudioServiceShuffleMode.none
-                        : AudioServiceShuffleMode.all;
-                    await handler.setShuffleMode(newMode);
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                StreamBuilder<bool>(
+                  stream: handler.shuffleModeEnabledStream,
+                  builder: (context, snapshot) {
+                    final enabled = snapshot.data ?? false;
+                    return IconButton(
+                      icon: Icon(
+                        Icons.shuffle,
+                        color: enabled
+                            ? Theme.of(context).colorScheme.primary
+                            : null,
+                      ),
+                      onPressed: () async {
+                        final newMode = enabled
+                            ? AudioServiceShuffleMode.none
+                            : AudioServiceShuffleMode.all;
+                        await handler.setShuffleMode(newMode);
+                      },
+                    );
                   },
-                );
-              },
-            ),
+                ),
 
-            IconButton(
-              icon: const Icon(Icons.skip_previous),
-              iconSize: 48,
-              onPressed: () {
-                if (handler.hasPrevious) {
-                  handler.skipToPrevious();
-                } else {
-                  handler.seek(Duration.zero);
-                }
-              },
-            ),
-
-            _buildPlayPauseButton(processingState, playing, handler),
-
-            IconButton(
-              icon: const Icon(Icons.skip_next),
-              iconSize: 48,
-              onPressed: handler.hasNext ? handler.skipToNext : null,
-            ),
-
-            StreamBuilder<LoopMode>(
-              stream: handler.loopModeStream,
-              builder: (context, snapshot) {
-                final loopMode = snapshot.data ?? LoopMode.off;
-                IconData icon;
-                Color? color;
-                switch (loopMode) {
-                  case LoopMode.off:
-                    icon = Icons.repeat;
-                    color = null;
-                    break;
-                  case LoopMode.one:
-                    icon = Icons.repeat_one;
-                    color = Theme.of(context).colorScheme.primary;
-                    break;
-                  case LoopMode.all:
-                    icon = Icons.repeat;
-                    color = Theme.of(context).colorScheme.primary;
-                    break;
-                }
-
-                return IconButton(
-                  icon: Icon(icon, color: color),
+                IconButton(
+                  icon: const Icon(Icons.skip_previous),
+                  iconSize: 48,
                   onPressed: () {
-                    final newMode = switch (loopMode) {
-                      LoopMode.off => AudioServiceRepeatMode.all,
-                      LoopMode.all => AudioServiceRepeatMode.one,
-                      LoopMode.one => AudioServiceRepeatMode.none,
-                    };
-                    handler.setRepeatMode(newMode);
+                    if (handler.hasPrevious) {
+                      handler.skipToPrevious();
+                    } else {
+                      handler.seek(Duration.zero);
+                    }
                   },
+                ),
+
+                _buildPlayPauseButton(processingState, playing, handler),
+
+                IconButton(
+                  icon: const Icon(Icons.skip_next),
+                  iconSize: 48,
+                  onPressed: handler.hasNext ? handler.skipToNext : null,
+                ),
+
+                StreamBuilder<LoopMode>(
+                  stream: handler.loopModeStream,
+                  builder: (context, snapshot) {
+                    final loopMode = snapshot.data ?? LoopMode.off;
+                    IconData icon;
+                    Color? color;
+                    switch (loopMode) {
+                      case LoopMode.off:
+                        icon = Icons.repeat;
+                        color = null;
+                        break;
+                      case LoopMode.one:
+                        icon = Icons.repeat_one;
+                        color = Theme.of(context).colorScheme.primary;
+                        break;
+                      case LoopMode.all:
+                        icon = Icons.repeat;
+                        color = Theme.of(context).colorScheme.primary;
+                        break;
+                    }
+
+                    return IconButton(
+                      icon: Icon(icon, color: color),
+                      onPressed: () {
+                        final newMode = switch (loopMode) {
+                          LoopMode.off => AudioServiceRepeatMode.all,
+                          LoopMode.all => AudioServiceRepeatMode.one,
+                          LoopMode.one => AudioServiceRepeatMode.none,
+                        };
+                        handler.setRepeatMode(newMode);
+                      },
+                    );
+                  },
+                ),
+              ],
+            ),
+            StreamBuilder<double>(
+              stream: handler.speedStream,
+              builder: (context, snapshot) {
+                final speed = snapshot.data ?? 1.0;
+                final isDefault = speed == 1.0;
+                return PopupMenuButton<double>(
+                  itemBuilder: (context) => _speedPresets
+                      .map(
+                        (s) => PopupMenuItem(
+                          value: s,
+                          child: Text(
+                            '${s}x',
+                            style: TextStyle(
+                              color: s == speed
+                                  ? Theme.of(context).colorScheme.primary
+                                  : null,
+                              fontWeight: s == speed ? FontWeight.bold : null,
+                            ),
+                          ),
+                        ),
+                      )
+                      .toList(),
+                  onSelected: (value) => handler.setSpeed(value),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 8,
+                      horizontal: 12,
+                    ),
+                    child: Text(
+                      '${speed}x',
+                      style: TextStyle(
+                        color: isDefault
+                            ? null
+                            : Theme.of(context).colorScheme.primary,
+                      ),
+                    ),
+                  ),
                 );
               },
             ),
