@@ -71,6 +71,8 @@ class AudioHandler extends BaseAudioHandler {
 
   Stream<Duration?> get durationStream => _player.durationStream;
 
+  Stream<double> get speedStream => _player.speedStream;
+
   Stream<Duration> get bufferedPositionStream => _player.bufferedPositionStream;
 
   Stream<PlayerState> get playerStateStream => _player.playerStateStream;
@@ -90,6 +92,9 @@ class AudioHandler extends BaseAudioHandler {
 
   @override
   Future<void> pause() async => await _player.pause();
+
+  @override
+  Future<void> setSpeed(double speed) async => await _player.setSpeed(speed);
 
   @override
   Future<void> updateQueue(List<MediaItem> queue) async {
