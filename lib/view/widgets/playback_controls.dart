@@ -126,38 +126,43 @@ class PlaybackControls extends ConsumerWidget {
                   builder: (context, snapshot) {
                     final speed = snapshot.data ?? 1.0;
                     final isDefault = speed == 1.0;
-                    return PopupMenuButton<double>(
-                      itemBuilder: (context) => _speedPresets
-                          .map(
-                            (s) => PopupMenuItem(
-                              value: s,
-                              child: Text(
-                                '${s}x',
-                                style: TextStyle(
-                                  color: s == speed
-                                      ? Theme.of(context).colorScheme.primary
-                                      : null,
-                                  fontWeight: s == speed
-                                      ? FontWeight.bold
-                                      : null,
+                    return Material(
+                      color: Colors.transparent,
+                      borderRadius: BorderRadius.circular(8),
+                      clipBehavior: Clip.antiAlias,
+                      child: PopupMenuButton<double>(
+                        itemBuilder: (context) => _speedPresets
+                            .map(
+                              (s) => PopupMenuItem(
+                                value: s,
+                                child: Text(
+                                  '${s}x',
+                                  style: TextStyle(
+                                    color: s == speed
+                                        ? Theme.of(context).colorScheme.primary
+                                        : null,
+                                    fontWeight: s == speed
+                                        ? FontWeight.bold
+                                        : null,
+                                  ),
                                 ),
                               ),
+                            )
+                            .toList(),
+                        onSelected: (value) => handler.setSpeed(value),
+                        child: SizedBox(
+                          width: 72,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            child: Text(
+                              '${speed}x',
+                              style: TextStyle(
+                                color: isDefault
+                                    ? null
+                                    : Theme.of(context).colorScheme.primary,
+                              ),
+                              textAlign: TextAlign.center,
                             ),
-                          )
-                          .toList(),
-                      onSelected: (value) => handler.setSpeed(value),
-                      child: SizedBox(
-                        width: 72,
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 8),
-                          child: Text(
-                            '${speed}x',
-                            style: TextStyle(
-                              color: isDefault
-                                  ? null
-                                  : Theme.of(context).colorScheme.primary,
-                            ),
-                            textAlign: TextAlign.center,
                           ),
                         ),
                       ),
@@ -170,39 +175,44 @@ class PlaybackControls extends ConsumerWidget {
                     final pitch = snapshot.data ?? 1.0;
                     final semitones = _pitchToSemitones(pitch);
                     final isDefault = semitones == 0;
-                    return PopupMenuButton<int>(
-                      itemBuilder: (context) => _semitonePresets
-                          .map(
-                            (s) => PopupMenuItem(
-                              value: s,
-                              child: Text(
-                                _semitoneLabel(s),
-                                style: TextStyle(
-                                  color: s == semitones
-                                      ? Theme.of(context).colorScheme.primary
-                                      : null,
-                                  fontWeight: s == semitones
-                                      ? FontWeight.bold
-                                      : null,
+                    return Material(
+                      color: Colors.transparent,
+                      borderRadius: BorderRadius.circular(8),
+                      clipBehavior: Clip.antiAlias,
+                      child: PopupMenuButton<int>(
+                        itemBuilder: (context) => _semitonePresets
+                            .map(
+                              (s) => PopupMenuItem(
+                                value: s,
+                                child: Text(
+                                  _semitoneLabel(s),
+                                  style: TextStyle(
+                                    color: s == semitones
+                                        ? Theme.of(context).colorScheme.primary
+                                        : null,
+                                    fontWeight: s == semitones
+                                        ? FontWeight.bold
+                                        : null,
+                                  ),
                                 ),
                               ),
+                            )
+                            .toList(),
+                        onSelected: (value) =>
+                            handler.setPitch(_semitonesToPitch(value)),
+                        child: SizedBox(
+                          width: 72,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            child: Text(
+                              'Key ${_semitoneLabel(semitones)}',
+                              style: TextStyle(
+                                color: isDefault
+                                    ? null
+                                    : Theme.of(context).colorScheme.primary,
+                              ),
+                              textAlign: TextAlign.center,
                             ),
-                          )
-                          .toList(),
-                      onSelected: (value) =>
-                          handler.setPitch(_semitonesToPitch(value)),
-                      child: SizedBox(
-                        width: 72,
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 8),
-                          child: Text(
-                            'Key ${_semitoneLabel(semitones)}',
-                            style: TextStyle(
-                              color: isDefault
-                                  ? null
-                                  : Theme.of(context).colorScheme.primary,
-                            ),
-                            textAlign: TextAlign.center,
                           ),
                         ),
                       ),
