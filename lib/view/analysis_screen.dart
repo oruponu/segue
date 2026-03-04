@@ -383,7 +383,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen>
             value: style.confidence,
             backgroundColor: Colors.white.withValues(alpha: 0.1),
             valueColor: AlwaysStoppedAnimation<Color>(
-              Colors.purple.withValues(alpha: 0.7),
+              Theme.of(context).colorScheme.primary.withValues(alpha: 0.7),
             ),
             minHeight: 4,
           ),

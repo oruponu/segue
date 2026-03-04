@@ -26,7 +26,10 @@ class SegueApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Segue',
-      theme: ThemeData.dark(),
+      theme: ThemeData(
+        colorSchemeSeed: Colors.blue,
+        brightness: Brightness.dark,
+      ),
       home: const MainScreen(),
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
