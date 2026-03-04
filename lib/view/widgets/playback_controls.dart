@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:audio_service/audio_service.dart' hide AudioHandler;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
@@ -5,6 +6,19 @@ import 'package:just_audio/just_audio.dart';
 import 'package:segue/providers/audio_handler_provider.dart';
 
 const _speedPresets = [0.5, 0.75, 1.0, 1.25, 1.5, 2.0];
+const _semitonePresets = [-6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6];
+
+double _semitonesToPitch(int semitones) =>
+    math.pow(2, semitones / 12).toDouble();
+
+int _pitchToSemitones(double pitch) =>
+    (12 * math.log(pitch) / math.ln2).round();
+
+String _semitoneLabel(int semitones) {
+  if (semitones == 0) return '0';
+  if (semitones > 0) return '+$semitones';
+  return '$semitones';
+}
 
 class PlaybackControls extends ConsumerWidget {
   const PlaybackControls({super.key});
@@ -103,45 +117,97 @@ class PlaybackControls extends ConsumerWidget {
                 ),
               ],
             ),
-            StreamBuilder<double>(
-              stream: handler.speedStream,
-              builder: (context, snapshot) {
-                final speed = snapshot.data ?? 1.0;
-                final isDefault = speed == 1.0;
-                return PopupMenuButton<double>(
-                  itemBuilder: (context) => _speedPresets
-                      .map(
-                        (s) => PopupMenuItem(
-                          value: s,
-                          child: Text(
-                            '${s}x',
-                            style: TextStyle(
-                              color: s == speed
-                                  ? Theme.of(context).colorScheme.primary
-                                  : null,
-                              fontWeight: s == speed ? FontWeight.bold : null,
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              spacing: 32,
+              children: [
+                StreamBuilder<double>(
+                  stream: handler.speedStream,
+                  builder: (context, snapshot) {
+                    final speed = snapshot.data ?? 1.0;
+                    final isDefault = speed == 1.0;
+                    return PopupMenuButton<double>(
+                      itemBuilder: (context) => _speedPresets
+                          .map(
+                            (s) => PopupMenuItem(
+                              value: s,
+                              child: Text(
+                                '${s}x',
+                                style: TextStyle(
+                                  color: s == speed
+                                      ? Theme.of(context).colorScheme.primary
+                                      : null,
+                                  fontWeight: s == speed
+                                      ? FontWeight.bold
+                                      : null,
+                                ),
+                              ),
                             ),
+                          )
+                          .toList(),
+                      onSelected: (value) => handler.setSpeed(value),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 8,
+                          horizontal: 12,
+                        ),
+                        child: Text(
+                          '${speed}x',
+                          style: TextStyle(
+                            color: isDefault
+                                ? null
+                                : Theme.of(context).colorScheme.primary,
                           ),
                         ),
-                      )
-                      .toList(),
-                  onSelected: (value) => handler.setSpeed(value),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 8,
-                      horizontal: 12,
-                    ),
-                    child: Text(
-                      '${speed}x',
-                      style: TextStyle(
-                        color: isDefault
-                            ? null
-                            : Theme.of(context).colorScheme.primary,
                       ),
-                    ),
-                  ),
-                );
-              },
+                    );
+                  },
+                ),
+                StreamBuilder<double>(
+                  stream: handler.pitchStream,
+                  builder: (context, snapshot) {
+                    final pitch = snapshot.data ?? 1.0;
+                    final semitones = _pitchToSemitones(pitch);
+                    final isDefault = semitones == 0;
+                    return PopupMenuButton<int>(
+                      itemBuilder: (context) => _semitonePresets
+                          .map(
+                            (s) => PopupMenuItem(
+                              value: s,
+                              child: Text(
+                                _semitoneLabel(s),
+                                style: TextStyle(
+                                  color: s == semitones
+                                      ? Theme.of(context).colorScheme.primary
+                                      : null,
+                                  fontWeight: s == semitones
+                                      ? FontWeight.bold
+                                      : null,
+                                ),
+                              ),
+                            ),
+                          )
+                          .toList(),
+                      onSelected: (value) =>
+                          handler.setPitch(_semitonesToPitch(value)),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 8,
+                          horizontal: 12,
+                        ),
+                        child: Text(
+                          'Key ${_semitoneLabel(semitones)}',
+                          style: TextStyle(
+                            color: isDefault
+                                ? null
+                                : Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ],
             ),
           ],
         );
