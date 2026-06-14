@@ -1,16 +1,29 @@
-# segue
+# Segue
 
-A new Flutter project.
+楽曲解析機能付きモバイル向け音楽プレーヤー
 
-## Getting Started
+[![License](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](LICENSE)
+![Status](https://img.shields.io/badge/status-WIP-yellow)
 
-This project is a starting point for a Flutter application.
+## 概要
 
-A few resources to get you started if this is your first Flutter project:
+Segue は、[Flutter](https://flutter.dev/) ベースの音楽プレーヤーです。楽曲解析には [Essentia](https://essentia.upf.edu/) を使用しています。
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+## システム要件
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+- [Flutter SDK](https://docs.flutter.dev/get-started/install)
+
+## ビルドと実行
+
+```bash
+git clone https://github.com/oruponu/segue.git
+cd segue
+flutter pub get
+bash scripts/download_model.sh
+dart run build_runner build
+flutter run
+```
+
+## ライセンス
+
+[AGPL-3.0 License](LICENSE)
