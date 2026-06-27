@@ -150,9 +150,16 @@ class LibraryViewModel extends Notifier<LibraryState> {
     for (final file in files) {
       final cached = cacheMap[file.path];
       if (cached != null) {
-        final artUri = cached.artCachePath != null
-            ? Uri.file(cached.artCachePath!)
-            : null;
+        var artCachePath = cached.artCachePath;
+        if (artCachePath != null && !File(artCachePath).existsSync()) {
+          try {
+            artCachePath = await _extractArtwork(file, tempDir);
+            await dao.updateArtCachePath(cached.filePath, artCachePath);
+          } catch (_) {
+            artCachePath = null;
+          }
+        }
+        final artUri = artCachePath != null ? Uri.file(artCachePath) : null;
         mediaItems.add(
           MediaItem(
             id: cached.filePath,
@@ -236,5 +243,15 @@ class LibraryViewModel extends Notifier<LibraryState> {
   String _cacheFilePath(Directory tempDir, String filePath, String extension) {
     final hash = sha1.convert(utf8.encode(filePath));
     return p.join(tempDir.path, '$hash.$extension');
+  }
+
+  Future<String?> _extractArtwork(File file, Directory tempDir) async {
+    final metadata = readMetadata(file, getImage: true);
+    if (metadata.pictures.isEmpty) {
+      return null;
+    }
+    final artCachePath = _cacheFilePath(tempDir, file.path, 'jpg');
+    await File(artCachePath).writeAsBytes(metadata.pictures.first.bytes);
+    return artCachePath;
   }
 }
