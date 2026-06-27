@@ -1,6 +1,7 @@
 #include "essentia_bridge.h"
 
 #include <atomic>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -89,7 +90,7 @@ EssentiaResult essentia_analyze(const char* path, EssentiaCancelFlag* cancel_fla
     std::vector<Real> estimates;
     std::vector<Real> bpmIntervals;
 
-    Algorithm* rhythm = factory.create("RhythmExtractor2013");
+    std::unique_ptr<Algorithm> rhythm(factory.create("RhythmExtractor2013"));
     rhythm->input("signal").set(audio);
     rhythm->output("bpm").set(bpm);
     rhythm->output("ticks").set(ticks);
@@ -97,7 +98,6 @@ EssentiaResult essentia_analyze(const char* path, EssentiaCancelFlag* cancel_fla
     rhythm->output("estimates").set(estimates);
     rhythm->output("bpmIntervals").set(bpmIntervals);
     rhythm->compute();
-    delete rhythm;
 
     result.bpm = bpm;
     result.bpm_confidence = confidence;
@@ -118,13 +118,12 @@ EssentiaResult essentia_analyze(const char* path, EssentiaCancelFlag* cancel_fla
     std::string scale_str;
     Real strength = 0;
 
-    Algorithm* keyExtractor = factory.create("KeyExtractor");
+    std::unique_ptr<Algorithm> keyExtractor(factory.create("KeyExtractor"));
     keyExtractor->input("audio").set(audio);
     keyExtractor->output("key").set(key_str);
     keyExtractor->output("scale").set(scale_str);
     keyExtractor->output("strength").set(strength);
     keyExtractor->compute();
-    delete keyExtractor;
 
     static const char* note_names[] = {"C",  "C#", "D",  "Eb", "E",  "F",
                                        "F#", "G",  "Ab", "A",  "Bb", "B"};

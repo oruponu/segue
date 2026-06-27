@@ -1,5 +1,7 @@
 #include "audio_decode.h"
 
+#include <memory>
+
 #ifdef __ANDROID__
 #include <android/log.h>
 #define LOG_TAG "AudioDecode"
@@ -27,11 +29,11 @@ int decode_audio(const char* path, std::vector<float>& out_samples, int target_s
 
   try {
     AlgorithmFactory& factory = AlgorithmFactory::instance();
-    Algorithm* loader = factory.create("MonoLoader", "filename", std::string(path), "sampleRate",
-                                       (Real)target_sr, "resampleQuality", 4);
+    std::unique_ptr<Algorithm> loader(factory.create("MonoLoader", "filename", std::string(path),
+                                                     "sampleRate", (Real)target_sr,
+                                                     "resampleQuality", 4));
     loader->output("audio").set(out_samples);
     loader->compute();
-    delete loader;
   } catch (const std::exception& e) {
     LOGE("MonoLoader failed: %s", e.what());
     return -1;
