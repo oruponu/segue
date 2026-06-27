@@ -1,6 +1,8 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:audio_metadata_reader/audio_metadata_reader.dart';
 import 'package:audio_service/audio_service.dart';
+import 'package:crypto/crypto.dart';
 import 'package:drift/drift.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -180,18 +182,12 @@ class LibraryViewModel extends Notifier<LibraryState> {
         Uri? artUri;
         String? artCachePath;
         if (metadata.pictures.isNotEmpty) {
-          final picture = metadata.pictures.first;
-          final artFile = File(
-            '${tempDir.path}/${metadata.file.path.hashCode}.jpg',
-          );
-          await artFile.writeAsBytes(picture.bytes);
-          artUri = Uri.file(artFile.path);
-          artCachePath = artFile.path;
+          artCachePath = _cacheFilePath(tempDir, file.path, 'jpg');
+          await File(artCachePath).writeAsBytes(metadata.pictures.first.bytes);
+          artUri = Uri.file(artCachePath);
         }
 
-        final waveFile = File(
-          '${tempDir.path}/${metadata.file.path.hashCode}.wave',
-        );
+        final wavePath = _cacheFilePath(tempDir, file.path, 'wave');
 
         final title = metadata.title ?? p.basenameWithoutExtension(file.path);
         final durationMs = metadata.duration?.inMilliseconds;
@@ -207,7 +203,7 @@ class LibraryViewModel extends Notifier<LibraryState> {
             extras: {
               'discNumber': metadata.discNumber,
               'trackNumber': metadata.trackNumber,
-              'wavePath': waveFile.path,
+              'wavePath': wavePath,
             },
           ),
         );
@@ -222,7 +218,7 @@ class LibraryViewModel extends Notifier<LibraryState> {
             trackNumber: Value(metadata.trackNumber),
             durationMs: Value(durationMs),
             artCachePath: Value(artCachePath),
-            waveCachePath: Value(waveFile.path),
+            waveCachePath: Value(wavePath),
             scannedAt: Value(DateTime.now()),
           ),
         );
@@ -235,5 +231,10 @@ class LibraryViewModel extends Notifier<LibraryState> {
         scanProcessed: state.scanProcessed + 1,
       );
     }
+  }
+
+  String _cacheFilePath(Directory tempDir, String filePath, String extension) {
+    final hash = sha1.convert(utf8.encode(filePath));
+    return p.join(tempDir.path, '$hash.$extension');
   }
 }
