@@ -215,5 +215,4 @@ class LibraryScreen extends ConsumerWidget {
       child: const Icon(Icons.music_note),
     );
   }
-
 }
