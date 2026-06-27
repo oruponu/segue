@@ -233,7 +233,6 @@ class LibraryViewModel extends Notifier<LibraryState> {
 
       final albums = _groupByAlbum(mediaItems);
       state = state.copyWith(
-        playlist: List.of(mediaItems),
         albums: albums,
         scanProcessed: state.scanProcessed + 1,
       );

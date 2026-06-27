@@ -2,7 +2,6 @@ import 'package:audio_service/audio_service.dart';
 import 'package:segue/model/album.dart';
 
 class LibraryState {
-  final List<MediaItem> playlist;
   final bool isLoading;
   final int scanTotal;
   final int scanProcessed;
@@ -13,7 +12,6 @@ class LibraryState {
   final bool isPlaying;
 
   LibraryState({
-    this.playlist = const [],
     this.isLoading = false,
     this.scanTotal = 0,
     this.scanProcessed = 0,
@@ -25,7 +23,6 @@ class LibraryState {
   });
 
   LibraryState copyWith({
-    List<MediaItem>? playlist,
     bool? isLoading,
     int? scanTotal,
     int? scanProcessed,
@@ -37,7 +34,6 @@ class LibraryState {
     bool? isPlaying,
   }) {
     return LibraryState(
-      playlist: playlist ?? this.playlist,
       isLoading: isLoading ?? this.isLoading,
       scanTotal: scanTotal ?? this.scanTotal,
       scanProcessed: scanProcessed ?? this.scanProcessed,
