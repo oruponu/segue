@@ -35,7 +35,7 @@ class LibraryViewModel extends Notifier<LibraryState> {
   }
 
   Future<void> selectDirectory() async {
-    String? selectedDirectory = await FilePicker.platform.getDirectoryPath();
+    String? selectedDirectory = await FilePicker.getDirectoryPath();
     if (selectedDirectory == null) {
       return;
     }
