@@ -104,7 +104,7 @@ class AudioHandler extends BaseAudioHandler {
   Future<void> updateQueue(List<MediaItem> queue) async {
     this.queue.add(queue);
     final audioSource = queue
-        .map((item) => AudioSource.uri(Uri.parse(item.id), tag: item))
+        .map((item) => AudioSource.uri(Uri.file(item.id), tag: item))
         .toList();
     await _player.setAudioSources(audioSource);
   }
