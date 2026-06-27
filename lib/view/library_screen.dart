@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:segue/model/album.dart';
 import 'package:segue/providers/player_sheet_controller_provider.dart';
 import 'package:segue/view/widgets/playing_icon.dart';
+import 'package:segue/view/formatters/duration_formatter.dart';
 import 'package:segue/view_model/library_view_model.dart';
 
 class LibraryScreen extends ConsumerWidget {
@@ -88,7 +89,7 @@ class LibraryScreen extends ConsumerWidget {
                             ),
                           ),
                           Text(
-                            '${album.trackCount}曲・${_formatDuration(album.totalDuration)}',
+                            '${album.trackCount}曲・${formatDuration(album.totalDuration)}',
                             style: const TextStyle(
                               fontSize: 12,
                               color: Colors.grey,
@@ -131,7 +132,7 @@ class LibraryScreen extends ConsumerWidget {
                 ),
               ),
               Text(
-                '${album.trackCount}曲・${_formatDuration(album.totalDuration)}',
+                '${album.trackCount}曲・${formatDuration(album.totalDuration)}',
                 style: const TextStyle(fontSize: 12, color: Colors.grey),
               ),
             ],
@@ -180,7 +181,7 @@ class LibraryScreen extends ConsumerWidget {
                 ),
               ),
               Text(
-                _formatDuration(track.duration),
+                formatDuration(track.duration),
                 style: const TextStyle(fontSize: 12, color: Colors.grey),
               ),
             ],
@@ -215,16 +216,4 @@ class LibraryScreen extends ConsumerWidget {
     );
   }
 
-  String _formatDuration(Duration? duration) {
-    if (duration == null) return "--:--";
-
-    String twoDigits(int n) => n.toString().padLeft(2, '0');
-    final hours = duration.inHours;
-    final minutes = duration.inMinutes.remainder(60);
-    final seconds = twoDigits(duration.inSeconds.remainder(60));
-    if (hours > 0) {
-      return "$hours:${twoDigits(minutes)}:$seconds";
-    }
-    return "$minutes:$seconds";
-  }
 }
