@@ -27,6 +27,11 @@ class TrackDao extends DatabaseAccessor<AppDatabase> with _$TrackDaoMixin {
     return into(tracks).insertOnConflictUpdate(entry);
   }
 
+  Future<void> updateArtCachePath(String filePath, String? artCachePath) {
+    return (update(tracks)..where((track) => track.filePath.equals(filePath)))
+        .write(TracksCompanion(artCachePath: Value(artCachePath)));
+  }
+
   Future<void> saveAnalysisResult({
     required String filePath,
     required double bpm,
