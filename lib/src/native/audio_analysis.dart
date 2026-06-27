@@ -382,7 +382,6 @@ class AudioAnalysis {
 
   static Future<StereoPeakResult?> computeStereoPeaks({
     required String pathStr,
-    int frameSize = 4096,
     int hopSize = 1024,
   }) async {
     ensureInitialized();
@@ -398,7 +397,7 @@ class AudioAnalysis {
 
     try {
       final result = await Isolate.run(() {
-        return _runComputeStereoPeaks(pathStr, frameSize, hopSize, flagAddress);
+        return _runComputeStereoPeaks(pathStr, hopSize, flagAddress);
       });
       return result;
     } finally {
@@ -481,7 +480,6 @@ class AudioAnalysis {
 
   static StereoPeakResult? _runComputeStereoPeaks(
     String pathStr,
-    int frameSize,
     int hopSize,
     int flagAddress,
   ) {
@@ -502,7 +500,7 @@ class AudioAnalysis {
     final flag = Pointer<EssentiaCancelFlag>.fromAddress(flagAddress);
 
     try {
-      final dataPtr = compute(pathPtr, frameSize, hopSize, flag);
+      final dataPtr = compute(pathPtr, hopSize, flag);
 
       if (dataPtr == nullptr) {
         dev.log('computeStereoPeaks: null result', name: 'Essentia');

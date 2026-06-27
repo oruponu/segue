@@ -29,8 +29,8 @@ typedef struct {
   int32_t error_code;  // 0=success, 1=cancelled, 2=decode error, 3=analysis error
 } StereoPeakData;
 
-StereoPeakData* essentia_compute_stereo_peaks(const char* path, int32_t frame_size,
-                                              int32_t hop_size, EssentiaCancelFlag* cancel_flag);
+StereoPeakData* essentia_compute_stereo_peaks(const char* path, int32_t hop_size,
+                                              EssentiaCancelFlag* cancel_flag);
 
 void essentia_free_stereo_peaks(StereoPeakData* data);
 
