@@ -199,8 +199,8 @@ void essentia_free_spectrum(SpectrumData* data) {
   }
 }
 
-StereoPeakData* essentia_compute_stereo_peaks(const char* path, int32_t frame_size,
-                                              int32_t hop_size, EssentiaCancelFlag* cancel_flag) {
+StereoPeakData* essentia_compute_stereo_peaks(const char* path, int32_t hop_size,
+                                              EssentiaCancelFlag* cancel_flag) {
   StereoPeakData* data = (StereoPeakData*)malloc(sizeof(StereoPeakData));
   if (!data) return nullptr;
 
@@ -216,7 +216,7 @@ StereoPeakData* essentia_compute_stereo_peaks(const char* path, int32_t frame_si
     return data;
   }
 
-  LOGI("Computing stereo peaks: path=%s, frameSize=%d, hopSize=%d", path, frame_size, hop_size);
+  LOGI("Computing stereo peaks: path=%s, hopSize=%d", path, hop_size);
 
   AlgorithmFactory& factory = AlgorithmFactory::instance();
 

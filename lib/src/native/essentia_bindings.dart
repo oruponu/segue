@@ -135,14 +135,12 @@ final class StereoPeakData extends Struct {
 typedef EssentiaComputeStereoPeaksNative =
     Pointer<StereoPeakData> Function(
       Pointer<Utf8> path,
-      Int32 frameSize,
       Int32 hopSize,
       Pointer<EssentiaCancelFlag> cancelFlag,
     );
 typedef EssentiaComputeStereoPeaks =
     Pointer<StereoPeakData> Function(
       Pointer<Utf8> path,
-      int frameSize,
       int hopSize,
       Pointer<EssentiaCancelFlag> cancelFlag,
     );
