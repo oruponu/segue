@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
 import 'package:segue/providers/audio_handler_provider.dart';
+import 'package:segue/view/formatters/duration_formatter.dart';
 import 'package:segue/providers/position_provider.dart';
 import 'package:segue/providers/seeking_position_provider.dart';
 import 'package:segue/providers/waveform_provider.dart';
@@ -87,14 +88,14 @@ class ProgressBarWidget extends ConsumerWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      _formatDuration(displayPosition),
+                      formatDuration(displayPosition),
                       style: const TextStyle(
                         color: Colors.white70,
                         fontSize: 14,
                       ),
                     ),
                     Text(
-                      _formatDuration(data.duration),
+                      formatDuration(data.duration),
                       style: const TextStyle(
                         color: Colors.white70,
                         fontSize: 14,
@@ -135,9 +136,4 @@ class ProgressBarWidget extends ConsumerWidget {
     );
   }
 
-  String _formatDuration(Duration duration) {
-    final minutes = duration.inMinutes.remainder(60).toString();
-    final seconds = duration.inSeconds.remainder(60).toString().padLeft(2, '0');
-    return '$minutes:$seconds';
-  }
 }
