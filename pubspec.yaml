@@ -51,6 +51,7 @@ dependencies:
   drift: ^2.31.0
   drift_flutter: ^0.2.8
   path: ^1.9.1
+  crypto: ^3.0.7
 
 dev_dependencies:
   flutter_test:
