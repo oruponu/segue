@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <memory>
 #include <numeric>
 #include <vector>
 
@@ -94,18 +95,18 @@ StyleResult essentia_classify_style(const char* audio_path, const char* model_pa
     std::vector<float> spectrum;
     std::vector<float> mel_bands;
 
-    Algorithm* frameCutter = factory.create("FrameCutter", "frameSize", FRAME_SIZE, "hopSize",
-                                            HOP_SIZE, "startFromZero", false);
-    Algorithm* windowing =
-        factory.create("Windowing", "type", "hann", "size", FRAME_SIZE, "normalized", false);
-    Algorithm* spec = factory.create("Spectrum", "size", FRAME_SIZE);
-    Algorithm* melBands = factory.create(
+    std::unique_ptr<Algorithm> frameCutter(factory.create(
+        "FrameCutter", "frameSize", FRAME_SIZE, "hopSize", HOP_SIZE, "startFromZero", false));
+    std::unique_ptr<Algorithm> windowing(
+        factory.create("Windowing", "type", "hann", "size", FRAME_SIZE, "normalized", false));
+    std::unique_ptr<Algorithm> spec(factory.create("Spectrum", "size", FRAME_SIZE));
+    std::unique_ptr<Algorithm> melBands(factory.create(
         "MelBands", "numberBands", NUM_BANDS, "sampleRate", (Real)STYLE_SR, "warpingFormula",
         "slaneyMel", "weighting", "linear", "normalize", "unit_tri", "inputSize",
-        FRAME_SIZE / 2 + 1, "lowFrequencyBound", 0.0, "highFrequencyBound", (Real)(STYLE_SR / 2));
-    Algorithm* shiftOp = factory.create("UnaryOperator", "type", "identity", "shift", (Real)1.0,
-                                        "scale", (Real)10000.0);
-    Algorithm* logOp = factory.create("UnaryOperator", "type", "log10");
+        FRAME_SIZE / 2 + 1, "lowFrequencyBound", 0.0, "highFrequencyBound", (Real)(STYLE_SR / 2)));
+    std::unique_ptr<Algorithm> shiftOp(factory.create("UnaryOperator", "type", "identity", "shift",
+                                                      (Real)1.0, "scale", (Real)10000.0));
+    std::unique_ptr<Algorithm> logOp(factory.create("UnaryOperator", "type", "log10"));
 
     std::vector<float> current_frame;
     frameCutter->input("signal").set(audio);
@@ -133,12 +134,6 @@ StyleResult essentia_classify_style(const char* audio_path, const char* model_pa
       if (current_frame.empty()) break;
 
       if (is_cancelled(cancel_flag)) {
-        delete frameCutter;
-        delete windowing;
-        delete spec;
-        delete melBands;
-        delete shiftOp;
-        delete logOp;
         result.error_code = 1;
         return result;
       }
@@ -151,13 +146,6 @@ StyleResult essentia_classify_style(const char* audio_path, const char* model_pa
 
       mel_frames.push_back(log_mel_bands);
     }
-
-    delete frameCutter;
-    delete windowing;
-    delete spec;
-    delete melBands;
-    delete shiftOp;
-    delete logOp;
   } catch (const std::exception& e) {
     LOGE("Mel spectrogram error: %s", e.what());
     result.error_code = 3;

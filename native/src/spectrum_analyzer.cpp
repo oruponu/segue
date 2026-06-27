@@ -4,6 +4,7 @@
 #include <cmath>
 #include <cstdlib>
 #include <cstring>
+#include <memory>
 #include <vector>
 
 #include "audio_decode.h"
@@ -101,11 +102,11 @@ SpectrumData* essentia_compute_spectrum(const char* path, int32_t num_bands, int
     std::vector<float> windowed_frame;
     std::vector<float> spectrum_out;
 
-    Algorithm* frameCutter = factory.create("FrameCutter", "frameSize", frame_size, "hopSize",
-                                            hop_size, "startFromZero", false);
-    Algorithm* windowing =
-        factory.create("Windowing", "type", "hann", "size", frame_size, "normalized", false);
-    Algorithm* spec = factory.create("Spectrum", "size", frame_size);
+    std::unique_ptr<Algorithm> frameCutter(factory.create(
+        "FrameCutter", "frameSize", frame_size, "hopSize", hop_size, "startFromZero", false));
+    std::unique_ptr<Algorithm> windowing(
+        factory.create("Windowing", "type", "hann", "size", frame_size, "normalized", false));
+    std::unique_ptr<Algorithm> spec(factory.create("Spectrum", "size", frame_size));
 
     frameCutter->input("signal").set(audio);
     frameCutter->output("frame").set(current_frame);
@@ -122,9 +123,6 @@ SpectrumData* essentia_compute_spectrum(const char* path, int32_t num_bands, int
       if (current_frame.empty()) break;
 
       if (frame_count % 1000 == 0 && is_cancelled(cancel_flag)) {
-        delete frameCutter;
-        delete windowing;
-        delete spec;
         data->error_code = 1;
         return data;
       }
@@ -154,10 +152,6 @@ SpectrumData* essentia_compute_spectrum(const char* path, int32_t num_bands, int
       all_frames.push_back(bands);
       frame_count++;
     }
-
-    delete frameCutter;
-    delete windowing;
-    delete spec;
   } catch (const std::exception& e) {
     LOGE("Spectrum analysis error: %s", e.what());
     data->error_code = 3;
@@ -227,8 +221,8 @@ StereoPeakData* essentia_compute_stereo_peaks(const char* path, int32_t hop_size
   int bitRate;
 
   try {
-    Algorithm* loader =
-        factory.create("AudioLoader", "filename", std::string(path), "computeMD5", false);
+    std::unique_ptr<Algorithm> loader(
+        factory.create("AudioLoader", "filename", std::string(path), "computeMD5", false));
     loader->output("audio").set(stereoAudio);
     loader->output("sampleRate").set(nativeSR);
     loader->output("numberChannels").set(numChannels);
@@ -236,7 +230,6 @@ StereoPeakData* essentia_compute_stereo_peaks(const char* path, int32_t hop_size
     loader->output("codec").set(codec);
     loader->output("bit_rate").set(bitRate);
     loader->compute();
-    delete loader;
   } catch (const std::exception& e) {
     LOGE("AudioLoader failed: %s", e.what());
     data->error_code = 2;
@@ -270,8 +263,9 @@ StereoPeakData* essentia_compute_stereo_peaks(const char* path, int32_t hop_size
     LOGI("Resampling from %.0f to %d Hz", nativeSR, SPECTRUM_SR);
     try {
       std::vector<float> resL, resR;
-      Algorithm* rs = factory.create("Resample", "inputSampleRate", nativeSR, "outputSampleRate",
-                                     (Real)SPECTRUM_SR, "quality", 4);
+      std::unique_ptr<Algorithm> rs(factory.create("Resample", "inputSampleRate", nativeSR,
+                                                   "outputSampleRate", (Real)SPECTRUM_SR, "quality",
+                                                   4));
       rs->input("signal").set(left);
       rs->output("signal").set(resL);
       rs->compute();
@@ -279,7 +273,6 @@ StereoPeakData* essentia_compute_stereo_peaks(const char* path, int32_t hop_size
       rs->input("signal").set(right);
       rs->output("signal").set(resR);
       rs->compute();
-      delete rs;
 
       left = std::move(resL);
       right = std::move(resR);
