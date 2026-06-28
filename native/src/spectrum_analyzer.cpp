@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "audio_decode.h"
+#include "essentia_lock.h"
 
 #ifdef __ANDROID__
 #include <android/log.h>
@@ -35,6 +36,8 @@ extern "C" {
 
 SpectrumData* essentia_compute_spectrum(const char* path, int32_t num_bands, int32_t frame_size,
                                         int32_t hop_size, EssentiaCancelFlag* cancel_flag) {
+  std::lock_guard<std::mutex> essentiaGuard(essentiaGlobalMutex());
+
   SpectrumData* data = (SpectrumData*)malloc(sizeof(SpectrumData));
   if (!data) return nullptr;
 
@@ -195,6 +198,8 @@ void essentia_free_spectrum(SpectrumData* data) {
 
 StereoPeakData* essentia_compute_stereo_peaks(const char* path, int32_t hop_size,
                                               EssentiaCancelFlag* cancel_flag) {
+  std::lock_guard<std::mutex> essentiaGuard(essentiaGlobalMutex());
+
   StereoPeakData* data = (StereoPeakData*)malloc(sizeof(StereoPeakData));
   if (!data) return nullptr;
 

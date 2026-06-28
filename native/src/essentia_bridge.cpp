@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "audio_decode.h"
+#include "essentia_lock.h"
 
 #ifdef __ANDROID__
 #include <android/log.h>
@@ -47,11 +48,19 @@ int essentia_cancel_flag_is_set(EssentiaCancelFlag* flag) { return is_cancelled(
 
 void essentia_cancel_flag_destroy(EssentiaCancelFlag* flag) { delete flag; }
 
-void essentia_init(void) { essentia::init(); }
+void essentia_init(void) {
+  std::lock_guard<std::mutex> essentiaGuard(essentiaGlobalMutex());
+  essentia::init();
+}
 
-void essentia_shutdown(void) { essentia::shutdown(); }
+void essentia_shutdown(void) {
+  std::lock_guard<std::mutex> essentiaGuard(essentiaGlobalMutex());
+  essentia::shutdown();
+}
 
 EssentiaResult essentia_analyze(const char* path, EssentiaCancelFlag* cancel_flag) {
+  std::lock_guard<std::mutex> essentiaGuard(essentiaGlobalMutex());
+
   EssentiaResult result = {};
   result.key_note = -1;
   result.key_scale = -1;
