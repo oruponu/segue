@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "audio_decode.h"
+#include "essentia_lock.h"
 
 #ifdef __ANDROID__
 #include <android/log.h>
@@ -60,6 +61,8 @@ extern "C" {
 
 StyleResult essentia_classify_style(const char* audio_path, const char* model_path,
                                     EssentiaCancelFlag* cancel_flag) {
+  std::unique_lock<std::mutex> essentiaGuard(essentiaGlobalMutex());
+
   StyleResult result = {};
   result.count = 0;
   result.error_code = 0;
@@ -151,6 +154,9 @@ StyleResult essentia_classify_style(const char* audio_path, const char* model_pa
     result.error_code = 3;
     return result;
   }
+
+  // ONNX 推論は Essentia を触らないためロックを解放
+  essentiaGuard.unlock();
 
   if ((int)mel_frames.size() < PATCH_FRAMES) {
     LOGE("Not enough frames for a patch: %zu < %d", mel_frames.size(), PATCH_FRAMES);
