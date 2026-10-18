@@ -23,3 +23,22 @@ With the same ffmpeg, the output is byte-identical on every run. The encoded fil
 | `empty_stereo.wav` / `not_audio.mp3` | Decode failures |
 | `corrupt_middle.mp3` | File corrupted mid-stream (corrupt packets are skipped and decoding continues) |
 | `silence_31min.opus` | 30-minute cap |
+
+## Regenerating expected.json
+
+`expected.json` holds analysis results from the legacy implementation (`core/legacy`). The instrumented tests of the new implementation check that their results match these within tolerances.
+
+Requires an arm64 device, the dependencies built by `core/scripts/build_deps.sh` and the model downloaded by `scripts/download_models.sh`. Run from Git Bash. If more than one device is attached, set `ANDROID_SERIAL` to the device's serial first.
+
+```bash
+cd android
+export JAVA_HOME="$LOCALAPPDATA/Programs/Android Studio/jbr"
+ADB="$LOCALAPPDATA/Android/Sdk/platform-tools/adb"
+./gradlew :core-bridge:assembleDebugAndroidTest
+"$ADB" install -r -t core-bridge/build/outputs/apk/androidTest/debug/core-bridge-debug-androidTest.apk
+"$ADB" shell am instrument -w -e class com.oruponu.segue.core.LegacyBaselineGenerator -e generateBaseline true com.oruponu.segue.core.test/androidx.test.runner.AndroidJUnitRunner
+"$ADB" exec-out run-as com.oruponu.segue.core.test cat files/expected.json > ../core/testdata/expected.json
+"$ADB" uninstall com.oruponu.segue.core.test
+```
+
+The legacy implementation will be removed together with the Flutter app. After that, `expected.json` can no longer be regenerated with these steps.
