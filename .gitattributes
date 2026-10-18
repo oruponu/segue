@@ -1,1 +1,9 @@
 *.sh text eol=lf
+
+# Audio fixtures must stay byte-exact (core/testdata/not_audio.mp3 is plain text)
+*.wav binary
+*.mp3 binary
+*.ogg binary
+*.opus binary
+*.flac binary
+*.m4a binary
