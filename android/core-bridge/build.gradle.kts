@@ -7,6 +7,7 @@ android {
     compileSdk {
         version = release(36)
     }
+    ndkVersion = "28.2.13676358"
 
     defaultConfig {
         minSdk = 33
@@ -16,6 +17,9 @@ android {
             cmake {
                 cppFlags += ""
             }
+        }
+        ndk {
+            abiFilters += "arm64-v8a"
         }
     }
     compileOptions {
@@ -29,6 +33,23 @@ android {
         }
     }
 
+    sourceSets {
+        getByName("main") {
+            // libonnxruntime.so is provided by core/scripts/build_deps.sh
+            jniLibs.srcDir("../../core/deps/android/jniLibs")
+        }
+        getByName("androidTest") {
+            assets.srcDir("../../core/testdata")
+            assets.srcDir("../../models")
+        }
+    }
+
+    packaging {
+        jniLibs {
+            // The same .so may also be packaged through the CMake IMPORTED target
+            pickFirsts += "**/libonnxruntime.so"
+        }
+    }
 }
 
 dependencies {

@@ -1,0 +1,18 @@
+cmake_minimum_required(VERSION 3.22)
+project(segue_core LANGUAGES C CXX)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
+include(${CMAKE_CURRENT_LIST_DIR}/cmake/SegueDeps.cmake)
+
+# Legacy API (same sources as the Flutter app). Used only to generate the baseline data;
+# remove together with the Flutter app.
+add_library(segue_legacy STATIC
+  legacy/src/essentia_bridge.cpp
+  legacy/src/audio_decode.cpp
+  legacy/src/style_classifier.cpp
+  legacy/src/spectrum_analyzer.cpp)
+target_include_directories(segue_legacy PUBLIC ${CMAKE_CURRENT_LIST_DIR}/legacy/src)
+target_link_libraries(segue_legacy PUBLIC segue_deps)
