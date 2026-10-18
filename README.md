@@ -17,7 +17,7 @@ Segue は、[Flutter](https://flutter.dev/) ベースの音楽プレーヤーで
 
 ```bash
 git clone https://github.com/oruponu/segue.git
-cd segue
+cd segue/flutter
 flutter pub get
 bash scripts/download_model.sh
 dart run build_runner build
