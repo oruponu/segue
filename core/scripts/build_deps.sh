@@ -1,14 +1,27 @@
 #!/bin/bash
 set -euo pipefail
 
-# Usage: ./build_native_android.sh [NDK_PATH]
+# Usage: core/scripts/build_deps.sh android [NDK_PATH]
+#   Run on Linux (on Windows, use WSL). Outputs go to core/deps/android/<ABI>/{lib,include} and
+#   core/deps/android/jniLibs/<ABI>/.
+#   Set SEGUE_DEPS_BUILD_ROOT to keep sources and intermediate files elsewhere
+#   (default: core/deps/build/android).
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-NATIVE_DIR="$(dirname "$SCRIPT_DIR")"
-BUILD_ROOT="$NATIVE_DIR/build/android"
-OUTPUT_DIR="$NATIVE_DIR/libs/android"
-INCLUDE_DIR="$NATIVE_DIR/include"
+CORE_DIR="$(dirname "$SCRIPT_DIR")"
 
+TARGET="${1:-}"
+if [ "$TARGET" != "android" ]; then
+    echo "Usage: $0 android [NDK_PATH]"
+    exit 1
+fi
+shift
+
+BUILD_ROOT="${SEGUE_DEPS_BUILD_ROOT:-$CORE_DIR/deps/build/android}"
+DEPS_ROOT="$CORE_DIR/deps/android"
+JNILIBS_ROOT="$DEPS_ROOT/jniLibs"
+
+# Build against API 28 so the same libraries also work for the Flutter app (minSdk 28)
 ANDROID_API=28
 ABIS=("arm64-v8a")
 
@@ -243,6 +256,7 @@ build_libsamplerate() {
         -DANDROID_PLATFORM="android-$ANDROID_API" \
         -DCMAKE_INSTALL_PREFIX="$PREFIX" \
         -DCMAKE_POLICY_DEFAULT_CMP0057=NEW \
+        -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
         -DBUILD_SHARED_LIBS=OFF \
         -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
         -DBUILD_TESTING=OFF \
@@ -293,8 +307,8 @@ download_onnxruntime() {
     local ORT_DIR="$BUILD_ROOT/onnxruntime"
     local AAR_URL="https://repo1.maven.org/maven2/com/microsoft/onnxruntime/onnxruntime-android/${ORT_VERSION}/onnxruntime-android-${ORT_VERSION}.aar"
     local AAR_FILE="/tmp/onnxruntime-android-${ORT_VERSION}.aar"
-    local DEST_LIB="$OUTPUT_DIR/$ABI"
-    local JNILIBS_DIR="$NATIVE_DIR/../android/app/src/main/jniLibs/$ABI"
+    local DEST_LIB="$OUTPUT_DIR"
+    local JNILIBS_DIR="$JNILIBS_ROOT/$ABI"
 
     echo "=== Downloading ONNX Runtime ${ORT_VERSION} for $ABI ==="
 
@@ -330,7 +344,7 @@ download_onnxruntime() {
 copy_libs() {
     local ABI=$1
     local PREFIX="$BUILD_ROOT/$ABI/prefix"
-    local DEST="$OUTPUT_DIR/$ABI"
+    local DEST="$OUTPUT_DIR"
 
     echo "=== Copying libraries for $ABI ==="
     mkdir -p "$DEST"
@@ -345,11 +359,15 @@ copy_libs() {
             cp -r "$PREFIX/include/$hdr" "$INCLUDE_DIR/"
         done
     fi
+    cp "$PREFIX/include/samplerate.h" "$INCLUDE_DIR/"
 
     echo "Libraries copied to $DEST"
 }
 
 for ABI in "${ABIS[@]}"; do
+    OUTPUT_DIR="$DEPS_ROOT/$ABI/lib"
+    INCLUDE_DIR="$DEPS_ROOT/$ABI/include"
+    mkdir -p "$OUTPUT_DIR" "$INCLUDE_DIR"
     build_fftw3 "$ABI"
     build_yaml_cpp "$ABI"
     build_ffmpeg "$ABI"
@@ -362,6 +380,4 @@ done
 
 echo ""
 echo "=== Android build complete ==="
-echo "Static libraries: $OUTPUT_DIR"
-echo "Headers: $INCLUDE_DIR/essentia"
-echo "Headers: $INCLUDE_DIR/onnxruntime"
+echo "Outputs: $DEPS_ROOT"

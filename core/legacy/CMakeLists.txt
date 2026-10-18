@@ -1,50 +1,21 @@
+# Legacy API (libessentia_bridge.so) loaded by the Flutter app through dart:ffi.
+# Remove together with the Flutter app.
 cmake_minimum_required(VERSION 3.18)
-project(essentia_bridge LANGUAGES CXX)
+project(essentia_bridge LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+include(${CMAKE_CURRENT_LIST_DIR}/../cmake/SegueDeps.cmake)
+
 add_library(essentia_bridge SHARED
-    src/essentia_bridge.cpp
-    src/audio_decode.cpp
-    src/style_classifier.cpp
-    src/spectrum_analyzer.cpp
-)
-
-target_include_directories(essentia_bridge PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../native/include
-    ${CMAKE_CURRENT_SOURCE_DIR}/src
-)
-
-set(LIBS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../native/libs/android/${ANDROID_ABI})
-
-add_library(onnxruntime SHARED IMPORTED)
-set_target_properties(onnxruntime PROPERTIES
-    IMPORTED_LOCATION ${LIBS_DIR}/libonnxruntime.so)
-target_include_directories(essentia_bridge PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../native/include/onnxruntime)
-target_link_libraries(essentia_bridge PRIVATE onnxruntime)
-
-target_link_libraries(essentia_bridge PRIVATE
-    ${LIBS_DIR}/libessentia.a
-    ${LIBS_DIR}/libavcodec.a
-    ${LIBS_DIR}/libavformat.a
-    ${LIBS_DIR}/libavutil.a
-    ${LIBS_DIR}/libswresample.a
-    ${LIBS_DIR}/libsamplerate.a
-    ${LIBS_DIR}/libfftw3f.a
-    ${LIBS_DIR}/libyaml-cpp.a
-)
-
-if(ANDROID)
-    target_link_libraries(essentia_bridge PRIVATE
-        log
-        z
-    )
-endif()
+  src/essentia_bridge.cpp
+  src/audio_decode.cpp
+  src/style_classifier.cpp
+  src/spectrum_analyzer.cpp)
+target_include_directories(essentia_bridge PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(essentia_bridge PRIVATE segue_deps)
 
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
-    set_target_properties(essentia_bridge PROPERTIES
-        LINK_FLAGS "-s"
-    )
+  set_target_properties(essentia_bridge PROPERTIES LINK_FLAGS "-s")
 endif()
