@@ -7,3 +7,8 @@
 *.opus binary
 *.flac binary
 *.m4a binary
+
+# Gradle wrapper: the shell script needs LF and the batch file needs CRLF
+gradlew text eol=lf
+*.bat text eol=crlf
+*.jar binary
