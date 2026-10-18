@@ -31,3 +31,4 @@ plugins {
 
 rootProject.name = "Segue"
 include(":app")
+include(":core-bridge")
