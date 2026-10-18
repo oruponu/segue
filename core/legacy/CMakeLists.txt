@@ -12,17 +12,17 @@ add_library(essentia_bridge SHARED
 )
 
 target_include_directories(essentia_bridge PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../native/include
     ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
-set(LIBS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/libs/android/${ANDROID_ABI})
+set(LIBS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../native/libs/android/${ANDROID_ABI})
 
 add_library(onnxruntime SHARED IMPORTED)
 set_target_properties(onnxruntime PROPERTIES
     IMPORTED_LOCATION ${LIBS_DIR}/libonnxruntime.so)
 target_include_directories(essentia_bridge PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/onnxruntime)
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../native/include/onnxruntime)
 target_link_libraries(essentia_bridge PRIVATE onnxruntime)
 
 target_link_libraries(essentia_bridge PRIVATE
