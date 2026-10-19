@@ -55,3 +55,77 @@ SEGUE_JNI(void, nativeCancelRequest)(JNIEnv*, jclass, jlong token) {
 SEGUE_JNI(void, nativeCancelDestroy)(JNIEnv*, jclass, jlong token) {
   segue_cancel_destroy(fromHandle<SegueCancelToken>(token));
 }
+
+SEGUE_JNI(jint, nativeDecodeFile)(JNIEnv* env, jclass, jstring path, jlong token, jlongArray out) {
+  Utf8 p(env, path);
+  if (p.get() == nullptr) return SEGUE_INVALID_ARGUMENT;
+  SegueAudio* audio = nullptr;
+  const SegueStatus status =
+      segue_audio_decode_file(p.get(), fromHandle<SegueCancelToken>(token), &audio);
+  setHandle(env, out, audio);
+  return status;
+}
+
+SEGUE_JNI(void, nativeAudioFree)(JNIEnv*, jclass, jlong audio) {
+  segue_audio_free(fromHandle<SegueAudio>(audio));
+}
+
+SEGUE_JNI(jint, nativeVisualsWrite)(JNIEnv* env, jclass, jlong audio, jstring path) {
+  Utf8 p(env, path);
+  if (p.get() == nullptr) return SEGUE_INVALID_ARGUMENT;
+  return segue_visuals_write(fromHandle<const SegueAudio>(audio), p.get());
+}
+
+SEGUE_JNI(jint, nativeVisualsRead)(JNIEnv* env, jclass, jstring path, jlongArray out) {
+  Utf8 p(env, path);
+  if (p.get() == nullptr) return SEGUE_INVALID_ARGUMENT;
+  SegueVisuals* visuals = nullptr;
+  const SegueStatus status = segue_visuals_read(p.get(), &visuals);
+  setHandle(env, out, visuals);
+  return status;
+}
+
+SEGUE_JNI(void, nativeVisualsFree)(JNIEnv*, jclass, jlong visuals) {
+  segue_visuals_free(fromHandle<SegueVisuals>(visuals));
+}
+
+SEGUE_JNI(void, nativeVisualsInfo)(JNIEnv* env, jclass, jlong handle, jintArray out) {
+  const SegueVisuals* v = fromHandle<const SegueVisuals>(handle);
+  const jint info[6] = {segue_visuals_sample_rate(v),   segue_visuals_hop(v),
+                        segue_visuals_frame_count(v),   segue_visuals_band_count(v),
+                        segue_visuals_waveform_rate(v), segue_visuals_waveform_count(v)};
+  env->SetIntArrayRegion(out, 0, 6, info);
+}
+
+SEGUE_JNI(void, nativeVisualsCopy)(JNIEnv* env, jclass, jlong handle, jint kind, jbyteArray dst) {
+  const SegueVisuals* v = fromHandle<const SegueVisuals>(handle);
+  const jsize frames = segue_visuals_frame_count(v);
+  const void* src = nullptr;
+  jsize size = 0;
+  switch (kind) {
+    case 0:
+      src = segue_visuals_spectrum(v);
+      size = frames * segue_visuals_band_count(v);
+      break;
+    case 1:
+      src = segue_visuals_peak_left(v);
+      size = frames;
+      break;
+    case 2:
+      src = segue_visuals_peak_right(v);
+      size = frames;
+      break;
+    case 3:
+      src = segue_visuals_clip_bits(v);
+      size = (frames + 7) / 8;
+      break;
+    case 4:
+      src = segue_visuals_waveform(v);
+      size = segue_visuals_waveform_count(v) * 2;
+      break;
+    default:
+      return;
+  }
+  const jsize n = std::min(size, env->GetArrayLength(dst));
+  if (src != nullptr && n > 0) env->SetByteArrayRegion(dst, 0, n, static_cast<const jbyte*>(src));
+}
