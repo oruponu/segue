@@ -29,4 +29,17 @@ internal object NativeLib {
     @JvmStatic external fun nativeVisualsInfo(visuals: Long, out: IntArray)
 
     @JvmStatic external fun nativeVisualsCopy(visuals: Long, kind: Int, dst: ByteArray)
+
+    @JvmStatic external fun nativeModelsLoad(path: String, out: LongArray): Int
+
+    @JvmStatic external fun nativeModelsFree(models: Long)
+
+    @JvmStatic
+    external fun nativeAnalyze(
+        audio: Long,
+        models: Long,
+        token: Long,
+        floats: FloatArray,
+        ints: IntArray,
+    ): Int
 }

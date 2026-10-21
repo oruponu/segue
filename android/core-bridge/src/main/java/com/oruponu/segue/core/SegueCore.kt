@@ -51,6 +51,40 @@ object SegueCore {
         }
     }
 
+    fun loadModels(effnetPath: String): NativeModels {
+        val out = LongArray(1)
+        checkStatus(NativeLib.nativeModelsLoad(effnetPath, out))
+        return NativeModels(out[0])
+    }
+
+    /** Analyzes the BPM, key and styles. Skips style classification when models is null. */
+    fun analyze(audio: NativeAudio, models: NativeModels?, token: CancelToken): MusicResult {
+        val floats = FloatArray(3 + STYLE_MAX)
+        val ints = IntArray(3 + STYLE_MAX)
+        checkStatus(
+            NativeLib.nativeAnalyze(
+                audio.requireHandle(),
+                models?.requireHandle() ?: 0L,
+                token.requireHandle(),
+                floats,
+                ints,
+            ),
+        )
+        return MusicResult(
+            bpm = floats[0],
+            bpmConfidence = floats[1],
+            keyNote = ints[0],
+            keyScale = ints[1],
+            keyConfidence = floats[2],
+            styles =
+                List(ints[2]) {
+                    StyleScore(labelIndex = ints[3 + it], confidence = floats[3 + it])
+                },
+        )
+    }
+
+    private const val STYLE_MAX = 5
+
     private const val KIND_SPECTRUM = 0
     private const val KIND_PEAK_LEFT = 1
     private const val KIND_PEAK_RIGHT = 2

@@ -129,3 +129,37 @@ SEGUE_JNI(void, nativeVisualsCopy)(JNIEnv* env, jclass, jlong handle, jint kind,
   const jsize n = std::min(size, env->GetArrayLength(dst));
   if (src != nullptr && n > 0) env->SetByteArrayRegion(dst, 0, n, static_cast<const jbyte*>(src));
 }
+
+SEGUE_JNI(jint, nativeModelsLoad)(JNIEnv* env, jclass, jstring path, jlongArray out) {
+  Utf8 p(env, path);
+  if (p.get() == nullptr) return SEGUE_INVALID_ARGUMENT;
+  SegueModels* models = nullptr;
+  const SegueStatus status = segue_models_load(p.get(), &models);
+  setHandle(env, out, models);
+  return status;
+}
+
+SEGUE_JNI(void, nativeModelsFree)(JNIEnv*, jclass, jlong models) {
+  segue_models_free(fromHandle<SegueModels>(models));
+}
+
+// floats: [bpm, bpmConfidence, keyConfidence, styleConfidence × 5]
+// ints:   [keyNote, keyScale, styleCount, styleIndex × 5]
+SEGUE_JNI(jint, nativeAnalyze)
+(JNIEnv* env, jclass, jlong audio, jlong models, jlong token, jfloatArray floats, jintArray ints) {
+  SegueMusicResult r{};
+  const SegueStatus status =
+      segue_analyze(fromHandle<const SegueAudio>(audio), fromHandle<const SegueModels>(models),
+                    fromHandle<SegueCancelToken>(token), &r);
+  if (status == SEGUE_OK) {
+    jfloat f[3 + SEGUE_STYLE_MAX] = {r.bpm, r.bpm_confidence, r.key_confidence};
+    jint n[3 + SEGUE_STYLE_MAX] = {r.key_note, r.key_scale, r.style_count};
+    for (int i = 0; i < SEGUE_STYLE_MAX; ++i) {
+      f[3 + i] = r.style_confidences[i];
+      n[3 + i] = r.style_indices[i];
+    }
+    env->SetFloatArrayRegion(floats, 0, 3 + SEGUE_STYLE_MAX, f);
+    env->SetIntArrayRegion(ints, 0, 3 + SEGUE_STYLE_MAX, n);
+  }
+  return status;
+}
