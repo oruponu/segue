@@ -11,8 +11,10 @@ androidxTestEspresso = "3.7.0"
 coroutines = "1.10.2"
 junit = "4.13.2"
 kotlin = "2.3.20"
+ktfmt = "0.65"
 nav3Core = "1.0.1"
 lifecycleViewmodelNav3 = "2.10.0"
+spotless = "8.10.4"
 
 [libraries]
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "androidxCore" }
@@ -42,3 +44,4 @@ android-application = { id = "com.android.application", version.ref = "androidGr
 compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 android-library = { id = "com.android.library", version.ref = "androidGradlePlugin" }
+spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }
