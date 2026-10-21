@@ -11,12 +11,19 @@ import androidx.compose.ui.Modifier
 import com.oruponu.segue.theme.SegueTheme
 
 class MainActivity : ComponentActivity() {
-  override fun onCreate(savedInstanceState: Bundle?) {
-    super.onCreate(savedInstanceState)
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
 
-    enableEdgeToEdge()
-    setContent {
-      SegueTheme { Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) { MainNavigation() } }
+        enableEdgeToEdge()
+        setContent {
+            SegueTheme {
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background,
+                ) {
+                    MainNavigation()
+                }
+            }
+        }
     }
-  }
 }

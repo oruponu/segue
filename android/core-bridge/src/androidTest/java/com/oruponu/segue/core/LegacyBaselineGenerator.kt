@@ -2,17 +2,17 @@ package com.oruponu.segue.core
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import java.io.File
 import org.json.JSONArray
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assume.assumeTrue
 import org.junit.Test
 import org.junit.runner.RunWith
-import java.io.File
 
 /**
- * Writes the legacy implementation's analysis results to expected.json. Skipped in normal test runs.
- * See core/testdata/README.md for how to run it.
+ * Writes the legacy implementation's analysis results to expected.json. Skipped in normal test
+ * runs. See core/testdata/README.md for how to run it.
  */
 @RunWith(AndroidJUnit4::class)
 class LegacyBaselineGenerator {
@@ -37,11 +37,17 @@ class LegacyBaselineGenerator {
             val spectrumFrames = spectrum[1].toInt()
             val bandCount = spectrum[2].toInt()
             val peakFrames = peaks[1].toInt()
-            val indices = listOf(0, peakFrames / 4, peakFrames / 2, peakFrames * 3 / 4, peakFrames - 1).distinct()
+            val indices =
+                listOf(0, peakFrames / 4, peakFrames / 2, peakFrames * 3 / 4, peakFrames - 1)
+                    .distinct()
 
             val styles = JSONArray()
             for (i in 0 until style[1].toInt()) {
-                styles.put(JSONObject().put("index", style[2 + i].toInt()).put("confidence", style[7 + i].toDouble()))
+                styles.put(
+                    JSONObject()
+                        .put("index", style[2 + i].toInt())
+                        .put("confidence", style[7 + i].toDouble()),
+                )
             }
             val spectrumDb = JSONArray()
             val peakLeftDb = JSONArray()
@@ -79,9 +85,13 @@ class LegacyBaselineGenerator {
             )
         }
 
-        val root = JSONObject()
-            .put("generator", "LegacyBaselineGenerator (core/legacy = the Flutter app's native implementation)")
-            .put("fixtures", fixtures)
+        val root =
+            JSONObject()
+                .put(
+                    "generator",
+                    "LegacyBaselineGenerator (core/legacy = the Flutter app's native implementation)",
+                )
+                .put("fixtures", fixtures)
         File(InstrumentationRegistry.getInstrumentation().targetContext.filesDir, "expected.json")
             .writeText(root.toString(2))
     }

@@ -1,12 +1,12 @@
 package com.oruponu.segue.core
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import java.io.File
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertThrows
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import java.io.File
 
 @RunWith(AndroidJUnit4::class)
 class VisualsFileTest {
@@ -16,14 +16,19 @@ class VisualsFileTest {
     fun writeWavVisuals() {
         written = File(TestFixtures.workDir(), "file-test.sgv")
         CancelToken().use { token ->
-            SegueCore.decode(TestFixtures.file("click120_aminor_44k_stereo.wav").absolutePath, token).use { audio ->
-                SegueCore.writeVisuals(audio, written.absolutePath)
-            }
+            SegueCore.decode(
+                    TestFixtures.file("click120_aminor_44k_stereo.wav").absolutePath,
+                    token,
+                )
+                .use { audio ->
+                    SegueCore.writeVisuals(audio, written.absolutePath)
+                }
         }
     }
 
     private fun assertReadFails(file: File) {
-        val e = assertThrows(SegueException::class.java) { SegueCore.readVisuals(file.absolutePath) }
+        val e =
+            assertThrows(SegueException::class.java) { SegueCore.readVisuals(file.absolutePath) }
         assertEquals(SegueStatus.IO_FAILED, e.status)
     }
 
@@ -43,13 +48,18 @@ class VisualsFileTest {
 
     @Test
     fun writeToMissingDirectoryIsIoFailure() {
-        val e = assertThrows(SegueException::class.java) {
-            CancelToken().use { token ->
-                SegueCore.decode(TestFixtures.file("tiny_2000_mono.wav").absolutePath, token).use { audio ->
-                    SegueCore.writeVisuals(audio, File(TestFixtures.workDir(), "no-such-dir/x.sgv").absolutePath)
+        val e =
+            assertThrows(SegueException::class.java) {
+                CancelToken().use { token ->
+                    SegueCore.decode(TestFixtures.file("tiny_2000_mono.wav").absolutePath, token)
+                        .use { audio ->
+                            SegueCore.writeVisuals(
+                                audio,
+                                File(TestFixtures.workDir(), "no-such-dir/x.sgv").absolutePath,
+                            )
+                        }
                 }
             }
-        }
         assertEquals(SegueStatus.IO_FAILED, e.status)
     }
 
@@ -66,12 +76,21 @@ class VisualsFileTest {
     @Test
     fun otherAnalysisVersionIsRejected() {
         // analysis_version is the u16 at offset 6 (little-endian)
-        assertReadFails(variant("version.sgv") { it.also { b -> b[6] = 2; b[7] = 0 } })
+        assertReadFails(
+            variant("version.sgv") {
+                it.also { b ->
+                    b[6] = 2
+                    b[7] = 0
+                }
+            },
+        )
     }
 
     @Test
     fun hugeFrameCountIsRejectedBeforeAllocating() {
         // frame_count is the u32 at offset 16. 0xFFFFFFFF exceeds the 30-minute limit
-        assertReadFails(variant("huge.sgv") { it.also { b -> for (i in 16..19) b[i] = 0xFF.toByte() } })
+        assertReadFails(
+            variant("huge.sgv") { it.also { b -> for (i in 16..19) b[i] = 0xFF.toByte() } },
+        )
     }
 }

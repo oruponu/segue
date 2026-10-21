@@ -1,14 +1,17 @@
 package com.oruponu.segue.core
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import java.io.File
+import kotlin.math.abs
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
-import java.io.File
-import kotlin.math.abs
 
-/** Checks that the visuals from SegueCore.decode match the legacy results (expected.json) within one quantization step. */
+/**
+ * Checks that the visuals from SegueCore.decode match the legacy results (expected.json) within one
+ * quantization step.
+ */
 @RunWith(AndroidJUnit4::class)
 class VisualsParityTest {
     @Test
@@ -24,7 +27,10 @@ class VisualsParityTest {
             }
             val v = SegueCore.readVisuals(cache.absolutePath)
             val legacyPeakFrames = exp.getInt("legacy_peak_frames")
-            assertTrue("${fixture.name} frameCount=${v.frameCount}", v.frameCount >= legacyPeakFrames)
+            assertTrue(
+                "${fixture.name} frameCount=${v.frameCount}",
+                v.frameCount >= legacyPeakFrames,
+            )
 
             val frames = exp.getJSONArray("frames")
             for (i in 0 until frames.length()) {
@@ -33,16 +39,23 @@ class VisualsParityTest {
                 for (b in 0 until v.bandCount) {
                     val expected = Visuals.quantizeDb(row.getDouble(b).toFloat())
                     val actual = v.spectrumLevel(f, b)
-                    assertTrue("${fixture.name} spectrum f=$f b=$b expected=$expected actual=$actual",
-                        abs(expected - actual) <= 1)
+                    assertTrue(
+                        "${fixture.name} spectrum f=$f b=$b expected=$expected actual=$actual",
+                        abs(expected - actual) <= 1,
+                    )
                 }
-                val expL = Visuals.quantizeDb(exp.getJSONArray("peak_left_db").getDouble(i).toFloat())
-                val expR = Visuals.quantizeDb(exp.getJSONArray("peak_right_db").getDouble(i).toFloat())
+                val expL =
+                    Visuals.quantizeDb(exp.getJSONArray("peak_left_db").getDouble(i).toFloat())
+                val expR =
+                    Visuals.quantizeDb(exp.getJSONArray("peak_right_db").getDouble(i).toFloat())
                 assertTrue("${fixture.name} peakL f=$f", abs(expL - v.peakLeftLevel(f)) <= 1)
                 assertTrue("${fixture.name} peakR f=$f", abs(expR - v.peakRightLevel(f)) <= 1)
                 if (fixture.sourceSampleRate == 44100) {
-                    assertEquals("${fixture.name} clip f=$f",
-                        exp.getJSONArray("clip_flags").getInt(i) != 0, v.isClipped(f))
+                    assertEquals(
+                        "${fixture.name} clip f=$f",
+                        exp.getJSONArray("clip_flags").getInt(i) != 0,
+                        v.isClipped(f),
+                    )
                 }
             }
 
@@ -51,8 +64,10 @@ class VisualsParityTest {
             if (fixture.sourceSampleRate == 44100) {
                 assertEquals("${fixture.name} clip total", expectedClipTotal, clipTotal)
             } else {
-                assertTrue("${fixture.name} clip total $clipTotal vs $expectedClipTotal",
-                    abs(expectedClipTotal - clipTotal) <= 2)
+                assertTrue(
+                    "${fixture.name} clip total $clipTotal vs $expectedClipTotal",
+                    abs(expectedClipTotal - clipTotal) <= 2,
+                )
             }
         }
     }

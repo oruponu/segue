@@ -10,8 +10,7 @@ enum class SegueStatus(val code: Int) {
     ANALYSIS_FAILED(3),
     MODEL_LOAD_FAILED(4),
     IO_FAILED(5),
-    INVALID_ARGUMENT(6),
-    ;
+    INVALID_ARGUMENT(6);
 
     companion object {
         fun fromCode(code: Int): SegueStatus =

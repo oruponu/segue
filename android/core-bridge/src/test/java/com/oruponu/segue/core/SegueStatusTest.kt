@@ -1,9 +1,9 @@
 package com.oruponu.segue.core
 
+import kotlin.coroutines.cancellation.CancellationException
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertThrows
 import org.junit.Test
-import kotlin.coroutines.cancellation.CancellationException
 
 class SegueStatusTest {
     @Test

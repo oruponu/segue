@@ -1,17 +1,17 @@
 package com.oruponu.segue.core
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import java.io.File
+import kotlin.concurrent.thread
+import kotlin.coroutines.cancellation.CancellationException
+import kotlin.math.abs
+import kotlin.math.log10
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
-import java.io.File
-import kotlin.concurrent.thread
-import kotlin.coroutines.cancellation.CancellationException
-import kotlin.math.abs
-import kotlin.math.log10
 
 @RunWith(AndroidJUnit4::class)
 class DecodeTest {
@@ -20,15 +20,18 @@ class DecodeTest {
     private fun decodeVisuals(path: String): Visuals {
         val cache = File(TestFixtures.workDir(), "decode-test.sgv")
         CancelToken().use { token ->
-            SegueCore.decode(path, token).use { audio -> SegueCore.writeVisuals(audio, cache.absolutePath) }
+            SegueCore.decode(path, token).use { audio ->
+                SegueCore.writeVisuals(audio, cache.absolutePath)
+            }
         }
         return SegueCore.readVisuals(cache.absolutePath)
     }
 
     private fun assertDecodeFails(path: String) {
-        val e = assertThrows(SegueException::class.java) {
-            CancelToken().use { token -> SegueCore.decode(path, token).close() }
-        }
+        val e =
+            assertThrows(SegueException::class.java) {
+                CancelToken().use { token -> SegueCore.decode(path, token).close() }
+            }
         assertEquals(SegueStatus.DECODE_FAILED, e.status)
     }
 
@@ -45,7 +48,10 @@ class DecodeTest {
         assertEquals(1292, v.peakLeft.size)
         assertEquals((1292 + 7) / 8, v.clipBits.size)
         assertEquals(3000 * 2, v.waveform.size)
-        for (p in 0 until v.waveformCount) assertTrue("point $p", v.waveformMin(p) <= v.waveformMax(p))
+        for (p in 0 until v.waveformCount) assertTrue(
+            "point $p",
+            v.waveformMin(p) <= v.waveformMax(p),
+        )
     }
 
     @Test
@@ -64,19 +70,22 @@ class DecodeTest {
 
     @Test
     fun monoSourceKeepsItsLevel() {
-        // tiny_2000_mono.wav is a sine wave with amplitude 0.5 (-6.02dB). Copying it to L/R must not
-        // lower it by 3dB
+        // tiny_2000_mono.wav is a sine wave with amplitude 0.5 (-6.02dB). Copying it to L/R must
+        // not lower it by 3dB
         val v = decodeVisuals(path("tiny_2000_mono.wav"))
         val expected = Visuals.quantizeDb(20f * log10(0.5f))
-        assertTrue("left=${v.peakLeftLevel(0)} expected=$expected", abs(v.peakLeftLevel(0) - expected) <= 1)
+        assertTrue(
+            "left=${v.peakLeftLevel(0)} expected=$expected",
+            abs(v.peakLeftLevel(0) - expected) <= 1,
+        )
         assertEquals(v.peakLeftLevel(0), v.peakRightLevel(0))
     }
 
     @Test
     fun corruptedMiddleIsSkippedAndDecodingContinues() {
         val v = decodeVisuals(path("corrupt_middle.mp3"))
-        // The original mp3 has about 1292 frames. It gets shorter by at most the 4096 corrupted bytes
-        // (about 0.2 seconds)
+        // The original mp3 has about 1292 frames. It gets shorter by at most the 4096 corrupted
+        // bytes (about 0.2 seconds)
         assertTrue("frameCount=${v.frameCount}", v.frameCount in 1100..1310)
     }
 
@@ -107,7 +116,8 @@ class DecodeTest {
     @Test
     fun undecodableInputsAreDecodeFailures() {
         assertDecodeFails(File(TestFixtures.workDir(), "does-not-exist.mp3").absolutePath)
-        val zeroBytes = File(TestFixtures.workDir(), "zero_bytes.mp3").apply { writeBytes(ByteArray(0)) }
+        val zeroBytes =
+            File(TestFixtures.workDir(), "zero_bytes.mp3").apply { writeBytes(ByteArray(0)) }
         assertDecodeFails(zeroBytes.absolutePath)
         assertDecodeFails(path("not_audio.mp3"))
         assertDecodeFails(path("empty_stereo.wav"))
@@ -132,7 +142,10 @@ class DecodeTest {
     fun requestFromAnotherThreadDuringDecodeIsSafe() {
         repeat(5) { i ->
             CancelToken().use { token ->
-                val canceller = thread { Thread.sleep(i.toLong() * 3); token.request() }
+                val canceller = thread {
+                    Thread.sleep(i.toLong() * 3)
+                    token.request()
+                }
                 val result = runCatching {
                     SegueCore.decode(path("click120_aminor_44k_stereo.mp3"), token).close()
                 }
@@ -145,7 +158,8 @@ class DecodeTest {
 
     @Test
     fun closedAudioIsRejectedOnKotlinSide() {
-        val audio = CancelToken().use { token -> SegueCore.decode(path("tiny_2000_mono.wav"), token) }
+        val audio =
+            CancelToken().use { token -> SegueCore.decode(path("tiny_2000_mono.wav"), token) }
         audio.close()
         audio.close()
         assertThrows(IllegalStateException::class.java) {

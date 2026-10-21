@@ -1,11 +1,15 @@
 package com.oruponu.segue.core
 
 object SegueCore {
-    /** Initializes Essentia. Safe to call any number of times (each function also initializes if needed). */
+    /**
+     * Initializes Essentia. Safe to call any number of times (each function also initializes if
+     * needed).
+     */
     fun init() = checkStatus(NativeLib.nativeInit())
 
     /** Version of the analysis and visuals output. Used to invalidate the DB and caches. */
-    val analysisVersion: Int get() = NativeLib.nativeAnalysisVersion()
+    val analysisVersion: Int
+        get() = NativeLib.nativeAnalysisVersion()
 
     /** Decodes a file and computes its visuals. path is a path such as /proc/self/fd/N. */
     fun decode(path: String, token: CancelToken): NativeAudio {
@@ -27,7 +31,8 @@ object SegueCore {
             val frameCount = info[2]
             val bandCount = info[3]
             val waveformCount = info[5]
-            fun copy(kind: Int, size: Int) = ByteArray(size).also { NativeLib.nativeVisualsCopy(handle, kind, it) }
+            fun copy(kind: Int, size: Int) =
+                ByteArray(size).also { NativeLib.nativeVisualsCopy(handle, kind, it) }
             return Visuals(
                 sampleRate = info[0],
                 hop = info[1],

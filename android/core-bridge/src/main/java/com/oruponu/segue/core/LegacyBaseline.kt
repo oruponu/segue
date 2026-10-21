@@ -1,8 +1,8 @@
 package com.oruponu.segue.core
 
 /**
- * JNI for the legacy implementation (core/legacy, the Flutter app's native API).
- * Used only to generate the baseline data (core/testdata/expected.json); remove together with the Flutter app.
+ * JNI for the legacy implementation (core/legacy, the Flutter app's native API). Used only to
+ * generate the baseline data (core/testdata/expected.json); remove together with the Flutter app.
  */
 internal object LegacyBaseline {
     init {

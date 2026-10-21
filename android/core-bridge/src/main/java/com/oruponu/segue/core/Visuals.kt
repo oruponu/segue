@@ -19,7 +19,8 @@ class Visuals(
     val waveformCount: Int,
     val waveform: ByteArray,
 ) {
-    fun spectrumLevel(frame: Int, band: Int): Int = spectrum[frame * bandCount + band].toInt() and 0xFF
+    fun spectrumLevel(frame: Int, band: Int): Int =
+        spectrum[frame * bandCount + band].toInt() and 0xFF
 
     fun peakLeftLevel(frame: Int): Int = peakLeft[frame].toInt() and 0xFF
 
@@ -35,7 +36,8 @@ class Visuals(
         const val DB_FLOOR = -50f
 
         /** Same quantization as quantizeDb on the C++ side. */
-        fun quantizeDb(db: Float): Int = ((db.coerceIn(DB_FLOOR, 0f) - DB_FLOOR) * 255f / -DB_FLOOR).roundToInt()
+        fun quantizeDb(db: Float): Int =
+            ((db.coerceIn(DB_FLOOR, 0f) - DB_FLOOR) * 255f / -DB_FLOOR).roundToInt()
 
         fun levelToDb(level: Int): Float = level * -DB_FLOOR / 255f + DB_FLOOR
     }
