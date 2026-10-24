@@ -1,5 +1,6 @@
 #include "init.h"
 
+#include <essentia/debugging.h>
 #include <essentia/essentia.h>
 
 #include <exception>
@@ -26,6 +27,11 @@ SegueStatus ensureInitialized() {
     std::call_once(gInitOnce, [] {
       std::lock_guard<std::mutex> lock(essentiaMutex());
       essentia::init();
+      // Essentia's global Logger is not thread-safe. Calls are already serialized by
+      // essentiaMutex(); turning off info and warning messages is a second guard. They go to
+      // stderr, which Android does not show
+      essentia::infoLevelActive = false;
+      essentia::warningLevelActive = false;
       gInitStatus = SEGUE_OK;
     });
   } catch (const std::exception& e) {
