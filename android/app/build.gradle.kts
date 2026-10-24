@@ -16,6 +16,8 @@ android {
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
+
+        ndk { abiFilters += "arm64-v8a" }
     }
 
     buildTypes {
@@ -95,6 +97,7 @@ dependencies {
     androidTestImplementation(libs.androidx.test.espresso.core)
 
     // Data layer
+    implementation(project(":core-bridge"))
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
     implementation(libs.androidx.room.runtime)
