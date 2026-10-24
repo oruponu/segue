@@ -16,5 +16,7 @@ fi
 
 mkdir -p "$(dirname "$DEST")"
 echo "Downloading $URL ..."
-curl -fL --retry 5 --retry-delay 3 -o "$DEST" "$URL"
+# Rename only after curl succeeds, so an interrupted download is not taken as an existing model
+curl -fL --retry 5 --retry-delay 3 -o "$DEST.partial" "$URL"
+mv "$DEST.partial" "$DEST"
 echo "Saved to $DEST"
