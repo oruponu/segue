@@ -331,16 +331,20 @@ download_onnxruntime() {
     mkdir -p "$ORT_DIR"
     unzip -q "$AAR_FILE" -d "$ORT_DIR"
 
-    mkdir -p "$DEST_LIB"
-    cp "$ORT_DIR/jni/$ABI/libonnxruntime.so" "$DEST_LIB/"
-
-    rm -rf "$INCLUDE_DIR/onnxruntime"
-    mkdir -p "$INCLUDE_DIR/onnxruntime"
-    cp "$ORT_DIR/headers/"*.h "$INCLUDE_DIR/onnxruntime/"
+    # The skip check above looks only at libonnxruntime.so and the include directory, so copy
+    # the headers and jniLibs first and publish libonnxruntime.so last
+    rm -rf "$INCLUDE_DIR/onnxruntime" "$INCLUDE_DIR/onnxruntime.partial"
+    mkdir -p "$INCLUDE_DIR/onnxruntime.partial"
+    cp "$ORT_DIR/headers/"*.h "$INCLUDE_DIR/onnxruntime.partial/"
+    mv "$INCLUDE_DIR/onnxruntime.partial" "$INCLUDE_DIR/onnxruntime"
 
     # jniLibs for APK packaging
     mkdir -p "$JNILIBS_DIR"
-    cp "$DEST_LIB/libonnxruntime.so" "$JNILIBS_DIR/"
+    cp "$ORT_DIR/jni/$ABI/libonnxruntime.so" "$JNILIBS_DIR/"
+
+    mkdir -p "$DEST_LIB"
+    cp "$ORT_DIR/jni/$ABI/libonnxruntime.so" "$DEST_LIB/libonnxruntime.so.partial"
+    mv "$DEST_LIB/libonnxruntime.so.partial" "$DEST_LIB/libonnxruntime.so"
 
     rm -f "$AAR_FILE"
     rm -rf "$ORT_DIR"
@@ -359,11 +363,10 @@ copy_libs() {
         cp "$PREFIX/lib/${lib}.a" "$DEST/"
     done
 
-    if [ ! -d "$INCLUDE_DIR/libavcodec" ]; then
-        for hdr in libavcodec libavformat libavutil libswresample; do
-            cp -r "$PREFIX/include/$hdr" "$INCLUDE_DIR/"
-        done
-    fi
+    for hdr in libavcodec libavformat libavutil libswresample; do
+        rm -rf "$INCLUDE_DIR/$hdr"
+        cp -r "$PREFIX/include/$hdr" "$INCLUDE_DIR/"
+    done
     cp "$PREFIX/include/samplerate.h" "$INCLUDE_DIR/"
 
     echo "Libraries copied to $DEST"
