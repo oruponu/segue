@@ -40,6 +40,10 @@ android {
         shaders = false
     }
 
+    sourceSets { getByName("main") { assets.srcDir("../../models") } }
+
+    androidResources { noCompress += "onnx" }
+
     testOptions { unitTests { isIncludeAndroidResources = true } }
 
     packaging {
