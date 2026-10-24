@@ -13,11 +13,6 @@ android {
         minSdk = 33
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        externalNativeBuild {
-            cmake {
-                cppFlags += ""
-            }
-        }
         ndk {
             abiFilters += "arm64-v8a"
         }
@@ -53,8 +48,7 @@ android {
 }
 
 dependencies {
-    implementation(libs.androidx.core.ktx)
     testImplementation(libs.junit)
-    androidTestImplementation(libs.androidx.test.espresso.core)
     androidTestImplementation(libs.androidx.test.ext.junit)
+    androidTestImplementation(libs.androidx.test.runner)
 }
