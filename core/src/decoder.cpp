@@ -3,6 +3,7 @@
 #include <samplerate.h>
 
 #include <memory>
+#include <string>
 #include <vector>
 
 extern "C" {
@@ -18,6 +19,13 @@ extern "C" {
 
 namespace segue {
 namespace {
+
+// av_err2str is a compound literal macro and cannot be used from C++
+std::string avErrorString(int err) {
+  char buf[AV_ERROR_MAX_STRING_SIZE] = {};
+  av_strerror(err, buf, sizeof(buf));
+  return buf;
+}
 
 struct FormatDeleter {
   void operator()(AVFormatContext* p) const { avformat_close_input(&p); }
@@ -98,8 +106,10 @@ class Resampler {
 
 SegueStatus decodeStereo44k(const char* path, const SegueCancelToken* token, StereoSink& sink) {
   AVFormatContext* rawFormat = nullptr;
-  if (avformat_open_input(&rawFormat, path, nullptr, nullptr) < 0) {
-    SEGUE_LOGE("avformat_open_input failed: %s", path);
+  const int openRet = avformat_open_input(&rawFormat, path, nullptr, nullptr);
+  if (openRet < 0) {
+    SEGUE_LOGE("avformat_open_input failed: %s: %s (%d)", path, avErrorString(openRet).c_str(),
+               openRet);
     return SEGUE_DECODE_FAILED;
   }
   std::unique_ptr<AVFormatContext, FormatDeleter> format(rawFormat);
@@ -200,7 +210,7 @@ SegueStatus decodeStereo44k(const char* path, const SegueCancelToken* token, Ste
       if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) return true;
       if (ret == AVERROR_INVALIDDATA) continue;
       if (ret < 0) {
-        SEGUE_LOGE("avcodec_receive_frame failed: %d", ret);
+        SEGUE_LOGE("avcodec_receive_frame failed: %s (%d)", avErrorString(ret).c_str(), ret);
         return false;
       }
       const bool ok = convertFrame(frame.get());
@@ -214,7 +224,7 @@ SegueStatus decodeStereo44k(const char* path, const SegueCancelToken* token, Ste
     const int readRet = av_read_frame(format.get(), packet.get());
     if (readRet == AVERROR_EOF) break;
     if (readRet < 0) {
-      SEGUE_LOGE("av_read_frame failed: %d", readRet);
+      SEGUE_LOGE("av_read_frame failed: %s (%d)", avErrorString(readRet).c_str(), readRet);
       return SEGUE_DECODE_FAILED;
     }
     const bool isTarget = packet->stream_index == streamIndex;
@@ -222,7 +232,7 @@ SegueStatus decodeStereo44k(const char* path, const SegueCancelToken* token, Ste
     av_packet_unref(packet.get());
     if (!isTarget || sendRet == AVERROR_INVALIDDATA) continue;
     if (sendRet < 0) {
-      SEGUE_LOGE("avcodec_send_packet failed: %d", sendRet);
+      SEGUE_LOGE("avcodec_send_packet failed: %s (%d)", avErrorString(sendRet).c_str(), sendRet);
       return SEGUE_DECODE_FAILED;
     }
     if (!drainDecoder()) return SEGUE_DECODE_FAILED;
@@ -231,7 +241,8 @@ SegueStatus decodeStereo44k(const char* path, const SegueCancelToken* token, Ste
   // Flush. Any error other than AVERROR_EOF (already flushed) is a failure
   const int flushRet = avcodec_send_packet(decoder.get(), nullptr);
   if (flushRet < 0 && flushRet != AVERROR_EOF) {
-    SEGUE_LOGE("avcodec_send_packet (flush) failed: %d", flushRet);
+    SEGUE_LOGE("avcodec_send_packet (flush) failed: %s (%d)", avErrorString(flushRet).c_str(),
+               flushRet);
     return SEGUE_DECODE_FAILED;
   }
   if (!drainDecoder()) return SEGUE_DECODE_FAILED;
