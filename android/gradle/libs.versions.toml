@@ -19,6 +19,7 @@ ksp = "2.3.12"
 ktfmt = "0.65"
 media3 = "1.11.1"
 nav3Core = "1.0.1"
+robolectric = "4.17"
 room = "2.8.5"
 lifecycleViewmodelNav3 = "2.10.0"
 spotless = "8.10.4"
@@ -57,6 +58,7 @@ hilt-android = { module = "com.google.dagger:hilt-android", version.ref = "hilt"
 hilt-compiler = { module = "com.google.dagger:hilt-compiler", version.ref = "hilt" }
 kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerialization" }
+robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "androidGradlePlugin" }
