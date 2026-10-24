@@ -15,3 +15,8 @@
 local.properties
 /.idea/
 .kotlin
+
+# Release signing keys and their passwords
+key.properties
+**/*.keystore
+**/*.jks
