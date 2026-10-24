@@ -1,7 +1,8 @@
 package com.oruponu.segue.core
 
 /**
- * One style classification result. labelIndex is an index into the 400 Discogs-EffNet style labels.
+ * One style classification result. labelIndex is an index into core/spec/style-labels.json (the 400
+ * Discogs-EffNet style labels).
  */
 data class StyleScore(val labelIndex: Int, val confidence: Float)
 

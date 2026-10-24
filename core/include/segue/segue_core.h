@@ -1,5 +1,6 @@
 /*
  * Public C API of Segue Core. The only boundary with the apps (Android through JNI, iOS later).
+ * The visuals cache format, key notation and style labels are described in core/spec/.
  */
 #ifndef SEGUE_CORE_H
 #define SEGUE_CORE_H
@@ -55,7 +56,7 @@ void segue_cancel_destroy(SegueCancelToken* token);
 SegueStatus segue_audio_decode_file(const char* path, SegueCancelToken* token, SegueAudio** out);
 void segue_audio_free(SegueAudio* audio);
 
-/* Reading and writing the visuals cache */
+/* Reading and writing the visuals cache (core/spec/visuals-format.md) */
 SegueStatus segue_visuals_write(const SegueAudio* audio, const char* cache_path);
 SegueStatus segue_visuals_read(const char* cache_path, SegueVisuals** out);
 void segue_visuals_free(SegueVisuals* visuals);

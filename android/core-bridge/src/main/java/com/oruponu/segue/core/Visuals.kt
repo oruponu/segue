@@ -3,8 +3,8 @@ package com.oruponu.segue.core
 import kotlin.math.roundToInt
 
 /**
- * Visuals data. Spectrum and peaks are -50..0dB quantized to 0..255; the waveform is the amplitude
- * mapped to -127..127.
+ * Visuals data (core/spec/visuals-format.md). Spectrum and peaks are -50..0dB quantized to 0..255;
+ * the waveform is the amplitude mapped to -127..127.
  */
 class Visuals(
     val sampleRate: Int,
