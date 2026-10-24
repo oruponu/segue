@@ -1,5 +1,6 @@
 package com.oruponu.segue.core
 
+import android.os.ParcelFileDescriptor
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import java.io.File
 import kotlin.concurrent.thread
@@ -131,6 +132,28 @@ class DecodeTest {
     @Test
     fun sampleRateChangeMidStreamIsDecodeFailure() {
         assertDecodeFails(path("rate_change_mono.mp3"))
+    }
+
+    @Test
+    fun procSelfFdPathDecodesLikeFilePath() {
+        // The app passes a SAF file descriptor as /proc/self/fd/<fd>, which has no file extension
+        for (name in
+            listOf(
+                "click120_aminor_44k_stereo.mp3",
+                "click120_aminor_44k_stereo.ogg",
+                "click120_aminor_44k_stereo.opus",
+                "chords96_cmajor_48k_stereo.flac",
+                "click100_dminor_44k_mono.m4a",
+            )) {
+            val file = TestFixtures.file(name)
+            val direct = decodeVisuals(file.absolutePath)
+            val viaFd =
+                ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY).use { pfd ->
+                    decodeVisuals("/proc/self/fd/${pfd.fd}")
+                }
+            assertEquals(name, direct.frameCount, viaFd.frameCount)
+            assertArrayEquals(name, direct.peakLeft, viaFd.peakLeft)
+        }
     }
 
     @Test
