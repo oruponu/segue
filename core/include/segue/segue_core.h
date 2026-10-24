@@ -56,7 +56,11 @@ void segue_cancel_destroy(SegueCancelToken* token);
 SegueStatus segue_audio_decode_file(const char* path, SegueCancelToken* token, SegueAudio** out);
 void segue_audio_free(SegueAudio* audio);
 
-/* Reading and writing the visuals cache (core/spec/visuals-format.md) */
+/*
+ * Reading and writing the visuals cache (core/spec/visuals-format.md).
+ * write overwrites cache_path in place. To replace an existing cache, write to a temporary file
+ * and rename it
+ */
 SegueStatus segue_visuals_write(const SegueAudio* audio, const char* cache_path);
 SegueStatus segue_visuals_read(const char* cache_path, SegueVisuals** out);
 void segue_visuals_free(SegueVisuals* visuals);
