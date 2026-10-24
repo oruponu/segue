@@ -1,24 +1,19 @@
-allprojects {
-    repositories {
-        google()
-        mavenCentral()
+// Top-level build file where you can add configuration options common to all sub-projects/modules.
+plugins {
+    alias(libs.plugins.android.application) apply false
+    alias(libs.plugins.compose.compiler) apply false
+    alias(libs.plugins.kotlin.serialization) apply false
+    alias(libs.plugins.android.library) apply false
+    alias(libs.plugins.spotless)
+}
+
+spotless {
+    kotlin {
+        target("app/src/**/*.kt", "core-bridge/src/**/*.kt")
+        ktfmt(libs.versions.ktfmt.get()).kotlinlangStyle()
     }
-}
-
-val newBuildDir: Directory =
-    rootProject.layout.buildDirectory
-        .dir("../../build")
-        .get()
-rootProject.layout.buildDirectory.value(newBuildDir)
-
-subprojects {
-    val newSubprojectBuildDir: Directory = newBuildDir.dir(project.name)
-    project.layout.buildDirectory.value(newSubprojectBuildDir)
-}
-subprojects {
-    project.evaluationDependsOn(":app")
-}
-
-tasks.register<Delete>("clean") {
-    delete(rootProject.layout.buildDirectory)
+    kotlinGradle {
+        target("*.gradle.kts", "app/*.gradle.kts", "core-bridge/*.gradle.kts")
+        ktfmt(libs.versions.ktfmt.get()).kotlinlangStyle()
+    }
 }

@@ -1,2 +1,14 @@
-native/libs/**/*.a filter=lfs diff=lfs merge=lfs -text
 *.sh text eol=lf
+
+# Audio fixtures must stay byte-exact (core/testdata/not_audio.mp3 is plain text)
+*.wav binary
+*.mp3 binary
+*.ogg binary
+*.opus binary
+*.flac binary
+*.m4a binary
+
+# Gradle wrapper: the shell script needs LF and the batch file needs CRLF
+gradlew text eol=lf
+*.bat text eol=crlf
+*.jar binary
