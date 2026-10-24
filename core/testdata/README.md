@@ -22,6 +22,7 @@ With the same ffmpeg, the output is byte-identical on every run. The encoded fil
 | `tiny_2000_mono.wav` / `odd_length_stereo.wav` | Frame count definition |
 | `empty_stereo.wav` / `not_audio.mp3` | Decode failures |
 | `corrupt_middle.mp3` | File corrupted mid-stream (corrupt packets are skipped and decoding continues) |
+| `stereo_then_mono_44k.mp3` / `rate_change_mono.mp3` | Channel count or sample rate that changes mid-stream (decode fails) |
 | `silence_31min.opus` | 30-minute cap |
 
 ## Regenerating expected.json

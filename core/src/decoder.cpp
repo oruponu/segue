@@ -128,6 +128,7 @@ SegueStatus decodeStereo44k(const char* path, const SegueCancelToken* token, Ste
 
   const int inRate = decoder->sample_rate;
   const int inChannels = decoder->ch_layout.nb_channels;
+  const AVSampleFormat inFormat = decoder->sample_fmt;
   if (inRate <= 0 || inChannels <= 0) return SEGUE_DECODE_FAILED;
 
   AVChannelLayout inLayout{};
@@ -143,7 +144,7 @@ SegueStatus decodeStereo44k(const char* path, const SegueCancelToken* token, Ste
 
   SwrContext* rawSwr = nullptr;
   const int swrRet = swr_alloc_set_opts2(&rawSwr, &outLayout, AV_SAMPLE_FMT_FLT, inRate, &inLayout,
-                                         decoder->sample_fmt, inRate, 0, nullptr);
+                                         inFormat, inRate, 0, nullptr);
   av_channel_layout_uninit(&inLayout);
   av_channel_layout_uninit(&outLayout);
   std::unique_ptr<SwrContext, SwrDeleter> swr(rawSwr);
@@ -161,6 +162,14 @@ SegueStatus decodeStereo44k(const char* path, const SegueCancelToken* token, Ste
 
   // When f is nullptr, flushes the samples left in swresample
   auto convertFrame = [&](const AVFrame* f) -> bool {
+    // swresample is set up for the first parameters. A stream that changes them mid-stream (an mp3
+    // that switches from stereo to mono) would make it read missing planes, so it fails instead
+    if (f != nullptr && (f->sample_rate != inRate || f->ch_layout.nb_channels != inChannels ||
+                         f->format != inFormat)) {
+      SEGUE_LOGE("Stream parameters changed mid-stream: %d Hz, %d channels", f->sample_rate,
+                 f->ch_layout.nb_channels);
+      return false;
+    }
     const int inSamples = f != nullptr ? f->nb_samples : 0;
     const int maxOut = swr_get_out_samples(swr.get(), inSamples);
     if (maxOut < 0) return false;

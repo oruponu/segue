@@ -134,6 +134,23 @@ def main():
     with open(out("corrupt_middle.mp3"), "wb") as f:
         f.write(data)
 
+    # mp3 streams whose parameters change mid-stream: two 2-second encodes concatenated byte by byte
+    with tempfile.TemporaryDirectory() as tmp:
+        def mp3_part(name, part_sr, channel_count):
+            tone = [0.5 * math.sin(2.0 * math.pi * 440.0 * i / part_sr) for i in range(2 * part_sr)]
+            part_wav = os.path.join(tmp, name + ".wav")
+            write_wav(part_wav, part_sr, [tone] * channel_count)
+            part_mp3 = os.path.join(tmp, name + ".mp3")
+            encode(part_wav, part_mp3, "-c:a", "libmp3lame", "-b:a", "64k", "-id3v2_version", "0",
+                   "-write_xing", "0")
+            with open(part_mp3, "rb") as f:
+                return f.read()
+
+        with open(out("stereo_then_mono_44k.mp3"), "wb") as f:
+            f.write(mp3_part("stereo", 44100, 2) + mp3_part("mono", 44100, 1))
+        with open(out("rate_change_mono.mp3"), "wb") as f:
+            f.write(mp3_part("rate44", 44100, 1) + mp3_part("rate48", 48000, 1))
+
     ffmpeg("-f", "lavfi", "-i", "anullsrc=r=48000:cl=mono", "-t", "1860",
            "-map_metadata", "-1", "-fflags", "+bitexact", "-c:a", "libopus", "-b:a", "6k",
            out("silence_31min.opus"))
