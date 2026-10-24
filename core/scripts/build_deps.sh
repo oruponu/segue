@@ -63,7 +63,11 @@ download_and_extract() {
     local archive="/tmp/$filename"
 
     if [ ! -d "$dest" ]; then
-        mkdir -p "$dest"
+        # Extract into a sibling directory and rename it on success, so an interrupted run
+        # does not leave a directory that later runs take as a finished download
+        local partial="$dest.partial"
+        rm -rf "$partial"
+        mkdir -p "$partial"
         rm -f "$archive"
 
         echo "Downloading $url ..."
@@ -75,7 +79,7 @@ download_and_extract() {
             echo "Error: Downloaded file is not an archive ($filetype)"
             echo "URL may be invalid: $url"
             rm -f "$archive"
-            rmdir "$dest" 2>/dev/null || true
+            rm -rf "$partial"
             exit 1
         fi
 
@@ -86,8 +90,9 @@ download_and_extract() {
             *.tar.bz2)       tar_flag="j" ;;
         esac
 
-        tar "x${tar_flag}f" "$archive" -C "$dest" --strip-components="$strip"
+        tar "x${tar_flag}f" "$archive" -C "$partial" --strip-components="$strip"
         rm -f "$archive"
+        mv "$partial" "$dest"
     fi
 }
 
