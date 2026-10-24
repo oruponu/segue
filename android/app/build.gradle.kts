@@ -95,6 +95,7 @@ dependencies {
     ksp(libs.hilt.compiler)
     implementation(libs.androidx.room.runtime)
     ksp(libs.androidx.room.compiler)
+    implementation(libs.androidx.datastore)
 
     // Navigation
     implementation(libs.androidx.navigation3.ui)
