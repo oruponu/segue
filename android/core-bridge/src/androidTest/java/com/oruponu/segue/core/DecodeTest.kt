@@ -124,6 +124,16 @@ class DecodeTest {
     }
 
     @Test
+    fun channelCountChangeMidStreamIsDecodeFailure() {
+        assertDecodeFails(path("stereo_then_mono_44k.mp3"))
+    }
+
+    @Test
+    fun sampleRateChangeMidStreamIsDecodeFailure() {
+        assertDecodeFails(path("rate_change_mono.mp3"))
+    }
+
+    @Test
     fun longerThan30MinutesIsRejected() {
         assertDecodeFails(path("silence_31min.opus"))
     }
