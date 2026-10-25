@@ -20,6 +20,8 @@ abstract class AnalysisModule {
 
     @Binds abstract fun bindTrackFileOpener(opener: AndroidTrackFileOpener): TrackFileOpener
 
+    @Binds abstract fun bindAnalysisCanceller(repository: AnalysisRepository): AnalysisCanceller
+
     companion object {
         @Provides
         @Singleton

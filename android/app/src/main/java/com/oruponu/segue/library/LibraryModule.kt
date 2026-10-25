@@ -3,8 +3,6 @@ package com.oruponu.segue.library
 import android.content.Context
 import androidx.datastore.core.DataStoreFactory
 import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
-import com.oruponu.segue.analysis.AnalysisCanceller
-import com.oruponu.segue.analysis.NoOpAnalysisCanceller
 import com.oruponu.segue.data.JsonSerializer
 import dagger.Binds
 import dagger.Module
@@ -18,8 +16,6 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 abstract class LibraryModule {
     @Binds abstract fun bindMediaStoreSource(source: AndroidMediaStoreSource): MediaStoreSource
-
-    @Binds abstract fun bindAnalysisCanceller(canceller: NoOpAnalysisCanceller): AnalysisCanceller
 
     companion object {
         @Provides
