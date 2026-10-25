@@ -1,13 +1,17 @@
 package com.oruponu.segue.analysis
 
 import android.content.Context
+import android.util.Log
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import java.io.InputStream
 import javax.inject.Singleton
+
+private const val MODEL_NAME = "discogs-effnet-bsdynamic-1.onnx"
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -23,6 +27,21 @@ abstract class AnalysisModule {
         ): VisualsCache {
             val dir = context.cacheDir.resolve("visuals").also { it.mkdirs() }
             return VisualsCache(dir, engine).also { it.removeStaleTemps() }
+        }
+
+        @Provides
+        @Singleton
+        fun provideModelStore(@ApplicationContext context: Context): ModelStore {
+            val asset =
+                object : ModelAsset {
+                    override val length: Long
+                        get() = context.assets.openFd(MODEL_NAME).use { it.length }
+
+                    override fun open(): InputStream = context.assets.open(MODEL_NAME)
+                }
+            return ModelStore(asset, context.noBackupFilesDir.resolve("models/$MODEL_NAME")) {
+                Log.w("ModelStore", "Cannot prepare the model", it)
+            }
         }
     }
 }
