@@ -18,6 +18,8 @@ private const val MODEL_NAME = "discogs-effnet-bsdynamic-1.onnx"
 abstract class AnalysisModule {
     @Binds abstract fun bindEngine(engine: SegueCoreEngine): AnalysisEngine
 
+    @Binds abstract fun bindTrackFileOpener(opener: AndroidTrackFileOpener): TrackFileOpener
+
     companion object {
         @Provides
         @Singleton
