@@ -12,7 +12,7 @@ class SettingsStore(private val dataStore: DataStore<Settings>) {
     val selectedFolder: Flow<String?> =
         dataStore.data.map { it.selectedFolder }.distinctUntilChanged()
 
-    suspend fun setSelectedFolder(folder: String) {
+    suspend fun setSelectedFolder(folder: String?) {
         dataStore.updateData { it.copy(selectedFolder = folder) }
     }
 }
