@@ -2,6 +2,8 @@ package com.oruponu.segue.analysis
 
 import android.content.Context
 import android.util.Log
+import com.oruponu.segue.data.ApplicationScope
+import com.oruponu.segue.playback.PlaybackConnection
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -10,6 +12,8 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import java.io.InputStream
 import javax.inject.Singleton
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.map
 
 private const val MODEL_NAME = "discogs-effnet-bsdynamic-1.onnx"
 
@@ -23,6 +27,19 @@ abstract class AnalysisModule {
     @Binds abstract fun bindAnalysisCanceller(repository: AnalysisRepository): AnalysisCanceller
 
     companion object {
+        @Provides
+        @Singleton
+        fun provideAnalysisCoordinator(
+            connection: PlaybackConnection,
+            repository: AnalysisRepository,
+            @ApplicationScope scope: CoroutineScope,
+        ): AnalysisCoordinator =
+            AnalysisCoordinator(
+                connection.state.map { it.currentKey },
+                repository::setCurrent,
+                scope,
+            )
+
         @Provides
         @Singleton
         fun provideVisualsCache(
