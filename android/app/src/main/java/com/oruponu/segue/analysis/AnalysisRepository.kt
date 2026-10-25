@@ -136,6 +136,7 @@ constructor(
         val token = engine.newToken()
         task.attach(token)
         try {
+            Log.d(TAG, "decode start $key")
             val audio = opener.open(snapshot).use { engine.decode(it.path, token) }
             audio.use {
                 val ready =
