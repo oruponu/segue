@@ -527,6 +527,26 @@ class AnalysisRepositoryTest {
         }
 
     @Test
+    fun currentTrackRemovedBySyncFailsWithoutRecording() =
+        runBlocking<Unit> {
+            addTracks(A)
+            val repo = repository()
+            repo.setCurrent(A)
+            repo.await<Complete>(A)
+
+            lock.withLock {
+                db.trackDao().delete(listOf(A))
+                cache.delete(listOf(A))
+            }
+            repo.onTracksChanged(listOf(A))
+
+            assertEquals(Failed(SegueStatus.IO_FAILED, null), repo.await<Failed>(A))
+            idle()
+            assertEquals(1, engine.decodes.get())
+            assertNull(row(A))
+        }
+
+    @Test
     fun visualsSurviveCacheLimit() =
         runBlocking<Unit> {
             addTracks(A)

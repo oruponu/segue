@@ -78,8 +78,8 @@ constructor(
         synchronized(guard) {
             val restart = running?.key in keys || currentKey in keys
             keys.forEach { flowFor(it).value = Pending }
-            // A deleted track ends its new job at the snapshot step, so there is no need to check
-            // here whether the current track still exists.
+            // A deleted current track fails its new job at the snapshot step, so there is no need
+            // to check here whether it still exists.
             if (restart) start(currentKey)
         }
     }
@@ -118,7 +118,12 @@ constructor(
 
     private suspend fun analyze(task: Task) {
         val key = task.key
-        val snapshot = trackDao.byKey(key) ?: return
+        val snapshot = trackDao.byKey(key)
+        if (snapshot == null) {
+            // Not recorded, so that it is retried when the track next becomes current.
+            emit(task, Failed(SegueStatus.IO_FAILED, null))
+            return
+        }
         val row = analysisDao.analysis(key)?.takeIf { it.analysisVersion == engine.analysisVersion }
         val cached = visualsCache.read(key)
         task.visuals = cached
