@@ -335,6 +335,38 @@ class AnalysisRepositoryTest {
         }
 
     @Test
+    fun analyzeFailureIsRecorded() =
+        runBlocking<Unit> {
+            addTracks(A)
+            engine.onAnalyze = { throw SegueException(SegueStatus.ANALYSIS_FAILED) }
+            val repo = repository()
+
+            repo.setCurrent(A)
+
+            val failed = repo.await<Failed>(A)
+            assertEquals(SegueStatus.ANALYSIS_FAILED, failed.status)
+            assertNotNull(failed.visuals)
+            val row = row(A)!!
+            assertEquals(AnalysisStatus.ANALYSIS_FAILED, row.status)
+            assertEquals(engine.analysisVersion, row.analysisVersion)
+            assertTrue(cache.fileFor(A).exists())
+        }
+
+    @Test
+    fun invalidArgumentIsNotRecorded() =
+        runBlocking<Unit> {
+            addTracks(A)
+            engine.onDecode = { throw SegueException(SegueStatus.INVALID_ARGUMENT) }
+            val repo = repository()
+
+            repo.setCurrent(A)
+
+            assertEquals(Failed(SegueStatus.INVALID_ARGUMENT, null), repo.await<Failed>(A))
+            idle()
+            assertNull(row(A))
+        }
+
+    @Test
     fun ioFailureIsNotRecorded() =
         runBlocking<Unit> {
             addTracks(A)
