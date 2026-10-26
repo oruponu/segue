@@ -77,7 +77,7 @@ constructor(
     override fun onTracksChanged(keys: Collection<String>) {
         synchronized(guard) {
             val restart = running?.key in keys || currentKey in keys
-            keys.forEach { flowFor(it).value = Pending }
+            keys.forEach { states[it]?.value = Pending }
             // A deleted current track fails its new job at the snapshot step, so there is no need
             // to check here whether it still exists.
             if (restart) start(currentKey)
