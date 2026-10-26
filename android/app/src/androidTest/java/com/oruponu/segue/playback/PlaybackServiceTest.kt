@@ -2,6 +2,7 @@ package com.oruponu.segue.playback
 
 import android.Manifest
 import android.content.ComponentName
+import android.content.Intent
 import android.os.Bundle
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackParameters
@@ -23,12 +24,16 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Semaphore
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.math.abs
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeoutOrNull
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
 import org.junit.Assume.assumeTrue
@@ -37,6 +42,7 @@ import org.junit.Rule
 import org.junit.Test
 
 private const val TIMEOUT_MS = 5_000L
+private const val POSITION_TOLERANCE_MS = 500L
 
 class PlaybackServiceTest {
     @get:Rule
@@ -78,25 +84,7 @@ class PlaybackServiceTest {
         // A state left by an earlier run must not be restored into this test.
         store.save(SavedPlayback())
 
-        val token = SessionToken(context, ComponentName(context, PlaybackService::class.java))
-        val listener =
-            object : MediaController.Listener {
-                override fun onCustomCommand(
-                    controller: MediaController,
-                    command: SessionCommand,
-                    args: Bundle,
-                ): ListenableFuture<SessionResult> {
-                    if (command.customAction == PlaybackService.CUSTOM_COMMAND_SKIPPED_UNPLAYABLE) {
-                        skipped.incrementAndGet()
-                        skippedSignal.release()
-                    }
-                    return Futures.immediateFuture(SessionResult(SessionResult.RESULT_SUCCESS))
-                }
-            }
-        val future = onMain {
-            MediaController.Builder(context, token).setListener(listener).buildAsync()
-        }
-        controller = future.get(TIMEOUT_MS, TimeUnit.MILLISECONDS)
+        controller = connect()
         onMain { controller!!.resetSettings() }
     }
 
@@ -111,6 +99,7 @@ class PlaybackServiceTest {
             }
         }
         if (insertedKeys.isNotEmpty()) trackDao.delete(insertedKeys)
+        store.save(SavedPlayback())
     }
 
     @Test
@@ -210,6 +199,65 @@ class PlaybackServiceTest {
             ),
             saved,
         )
+    }
+
+    @Test
+    fun startupRestoresSavedStatePaused() = runBlocking {
+        val positionMs = (tracks[1].durationMs / 2).coerceAtMost(3_000)
+        val saved =
+            SavedPlayback(
+                queue = tracks.map { it.key },
+                currentKey = tracks[1].key,
+                positionMs = positionMs,
+                shuffle = true,
+                repeatMode = Player.REPEAT_MODE_ALL,
+                speed = 1.25f,
+                pitchSemitones = -3,
+            )
+        destroyService()
+        store.save(saved)
+        val written = Collections.synchronizedList(mutableListOf<SavedPlayback>())
+        val watcher = launch(Dispatchers.IO) { store.saved.collect { written += it } }
+
+        controller = connect()
+        awaitPlayer("the restored queue") { it.mediaItemCount == tracks.size }
+
+        assertRestored(saved.queue, tracks[1].key, positionMs, saved)
+        // The restore saves what it restored; nothing else may be written.
+        assertEquals(saved, store.saved.first())
+        // Gives a stray write from an ungated save time to show up.
+        delay(400)
+        watcher.cancel()
+        assertEquals(emptyList<SavedPlayback>(), written.filter { it != saved })
+    }
+
+    @Test
+    fun startupRestoreSkipsDeletedCurrentTrack() = runBlocking {
+        val deleted = tracks[0].copy(key = "SegueTest/deleted-${System.nanoTime()}.mp3")
+        trackDao.upsert(listOf(deleted))
+        trackDao.delete(listOf(deleted.key))
+        val saved =
+            SavedPlayback(
+                queue = listOf(tracks[0].key, deleted.key, tracks[1].key),
+                currentKey = deleted.key,
+                positionMs = 4_000,
+                shuffle = false,
+                repeatMode = Player.REPEAT_MODE_ONE,
+                speed = 0.75f,
+                pitchSemitones = 2,
+            )
+        destroyService()
+        store.save(saved)
+
+        controller = connect()
+        awaitPlayer("the restored queue") { it.mediaItemCount == tracks.size }
+
+        val survivors = tracks.map { it.key }
+        assertRestored(survivors, tracks[1].key, 0, saved)
+        awaitSaved("the restored queue") {
+            it == saved.copy(queue = survivors, currentKey = tracks[1].key, positionMs = 0)
+        }
+        Unit
     }
 
     private fun controller(): MediaController = controller!!
@@ -318,5 +366,105 @@ class PlaybackServiceTest {
         var result: Result<T>? = null
         instrumentation.runOnMainSync { result = runCatching(block) }
         return result!!.getOrThrow()
+    }
+
+    private fun connect(): MediaController {
+        val token = SessionToken(context, ComponentName(context, PlaybackService::class.java))
+        val listener =
+            object : MediaController.Listener {
+                override fun onCustomCommand(
+                    controller: MediaController,
+                    command: SessionCommand,
+                    args: Bundle,
+                ): ListenableFuture<SessionResult> {
+                    if (command.customAction == PlaybackService.CUSTOM_COMMAND_SKIPPED_UNPLAYABLE) {
+                        skipped.incrementAndGet()
+                        skippedSignal.release()
+                    }
+                    return Futures.immediateFuture(SessionResult(SessionResult.RESULT_SUCCESS))
+                }
+            }
+        val future = onMain {
+            MediaController.Builder(context, token).setListener(listener).buildAsync()
+        }
+        return future.get(TIMEOUT_MS, TimeUnit.MILLISECONDS)
+    }
+
+    private fun assertRestored(
+        queue: List<String>,
+        currentKey: String,
+        positionMs: Long,
+        saved: SavedPlayback,
+    ) {
+        val restored = onMain {
+            controller().run {
+                SavedPlayback(
+                    queue = List(mediaItemCount) { getMediaItemAt(it).mediaId },
+                    currentKey = currentMediaItem?.mediaId,
+                    positionMs = currentPosition,
+                    shuffle = shuffleModeEnabled,
+                    repeatMode = repeatMode,
+                    speed = playbackParameters.speed,
+                    pitchSemitones = semitonesOf(playbackParameters.pitch),
+                ) to playWhenReady
+            }
+        }
+        val (state, playWhenReady) = restored
+        assertEquals(
+            saved.copy(queue = queue, currentKey = currentKey, positionMs = state.positionMs),
+            state,
+        )
+        assertTrue(
+            "position ${state.positionMs}, expected $positionMs",
+            abs(state.positionMs - positionMs) <= POSITION_TOLERANCE_MS,
+        )
+        assertFalse(playWhenReady)
+    }
+
+    /**
+     * Destroys the service so that the next connection creates a new one, which restores the stored
+     * state. Returns once its onDestroy has saved, so no older save can follow.
+     */
+    private fun destroyService() {
+        // A controller on the session token itself does not bind the service, and it is
+        // disconnected when onDestroy releases the session, after the final save.
+        val sessionToken = onMain { controller().connectedToken!! }
+        val destroyed = CountDownLatch(1)
+        val watcher = onMain {
+            MediaController.Builder(context, sessionToken)
+                .setListener(
+                    object : MediaController.Listener {
+                        override fun onDisconnected(controller: MediaController) =
+                            destroyed.countDown()
+                    },
+                )
+                .buildAsync()
+        }
+            .get(TIMEOUT_MS, TimeUnit.MILLISECONDS)
+        onMain {
+            controller().release()
+            controller = null
+            releaseAppConnection()
+        }
+        context.stopService(Intent(context, PlaybackService::class.java))
+        try {
+            assertTrue(
+                "PlaybackService was not destroyed",
+                destroyed.await(TIMEOUT_MS, TimeUnit.MILLISECONDS),
+            )
+        } finally {
+            onMain { watcher.release() }
+        }
+    }
+
+    // PlaybackConnection cannot disconnect yet, and an earlier test class in this process may have
+    // left it bound, which would keep the service alive. Its listener resets it on release.
+    private fun releaseAppConnection() {
+        // TODO: use PlaybackConnection.disconnect() once it exists.
+        val field =
+            PlaybackConnection::class.java.getDeclaredField("controller").apply {
+                isAccessible = true
+            }
+        (field.get(entryPoint.playbackConnection()) as MediaController?)?.release()
     }
 }
