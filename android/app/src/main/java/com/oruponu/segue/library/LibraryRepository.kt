@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -113,8 +114,17 @@ constructor(
 
     @OptIn(FlowPreview::class)
     fun startAutoSync() {
-        scope.launch { selectedFolder.collect { syncLogged() } }
-        scope.launch { source.changes().debounce(CHANGE_DEBOUNCE_MS).collect { syncLogged() } }
+        scope.launch { selectedFolder.logFailure("folder").collect { syncLogged() } }
+        scope.launch {
+            source.changes().debounce(CHANGE_DEBOUNCE_MS).logFailure("MediaStore change").collect {
+                syncLogged()
+            }
+        }
+    }
+
+    private fun <T> Flow<T>.logFailure(what: String): Flow<T> = catch { e ->
+        if (e is CancellationException) throw e
+        Log.e(TAG, "Cannot observe $what; auto sync on it stops", e)
     }
 
     // A failure must not kill the application scope or stop later syncs.

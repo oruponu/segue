@@ -12,6 +12,7 @@ import com.oruponu.segue.data.db.AnalysisEntity
 import com.oruponu.segue.data.db.AnalysisStatus
 import com.oruponu.segue.data.db.SegueDatabase
 import com.oruponu.segue.data.db.TrackStyleEntity
+import java.io.IOException
 import java.util.Collections
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineStart
@@ -20,7 +21,9 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
@@ -405,6 +408,37 @@ class LibraryRepositoryTest {
         runCurrent()
         assertEquals(2, source.queryCount)
     }
+
+    @Test
+    fun autoSyncSurvivesFailingChangeObserver() = runTest {
+        source.tracks["A/"] = tracks("A/", 1)
+        source.changesError = IllegalStateException("observer not registered")
+        val repo = repository()
+
+        repo.startAutoSync()
+        runCurrent()
+
+        assertEquals(1, source.queryCount)
+        assertEquals(1, db.trackDao().observeAll().first { it.isNotEmpty() }.size)
+    }
+
+    @Test
+    fun autoSyncSurvivesFailingSettingsRead() = runTest {
+        source.tracks["A/"] = tracks("A/", 1)
+        settings.nextReadError = IOException("cannot read settings")
+        val repo = repository()
+
+        repo.startAutoSync()
+        runCurrent()
+        assertEquals(0, source.queryCount)
+
+        source.changes.tryEmit(Unit)
+        runCurrent()
+        advanceTimeBy(1000)
+        runCurrent()
+        assertEquals(1, source.queryCount)
+        assertEquals(1, db.trackDao().observeAll().first { it.isNotEmpty() }.size)
+    }
 }
 
 private class FakeMediaStoreSource : MediaStoreSource {
@@ -428,7 +462,9 @@ private class FakeMediaStoreSource : MediaStoreSource {
         return result
     }
 
-    override fun changes(): Flow<Unit> = changes
+    var changesError: Exception? = null
+
+    override fun changes(): Flow<Unit> = changesError?.let { e -> flow { throw e } } ?: changes
 }
 
 private class RecordingCanceller : AnalysisCanceller {
@@ -442,7 +478,16 @@ private class RecordingCanceller : AnalysisCanceller {
 private class FakeDataStore(initial: Settings) : DataStore<Settings> {
     private val state = MutableStateFlow(initial)
 
-    override val data: Flow<Settings> = state
+    /** Thrown by the next collection of [data] only. */
+    var nextReadError: Exception? = null
+
+    override val data: Flow<Settings> = flow {
+        nextReadError?.let {
+            nextReadError = null
+            throw it
+        }
+        emitAll(state)
+    }
 
     override suspend fun updateData(transform: suspend (t: Settings) -> Settings): Settings =
         transform(state.value).also { state.value = it }
