@@ -11,6 +11,8 @@ import com.oruponu.segue.data.TrackStoreLock
 import com.oruponu.segue.data.db.AnalysisEntity
 import com.oruponu.segue.data.db.AnalysisStatus
 import com.oruponu.segue.data.db.SegueDatabase
+import com.oruponu.segue.data.db.TrackDao
+import com.oruponu.segue.data.db.TrackEntity
 import com.oruponu.segue.data.db.TrackStyleEntity
 import java.io.IOException
 import java.util.Collections
@@ -54,6 +56,7 @@ class LibraryRepositoryTest {
 
     private lateinit var db: SegueDatabase
     private lateinit var cache: VisualsCache
+    private lateinit var trackDao: CountingTrackDao
     private val source = FakeMediaStoreSource()
     private val canceller = RecordingCanceller()
     private val settings = FakeDataStore(Settings(selectedFolder = "A/"))
@@ -63,6 +66,7 @@ class LibraryRepositoryTest {
     fun setUp() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         db = Room.inMemoryDatabaseBuilder(context, SegueDatabase::class.java).build()
+        trackDao = CountingTrackDao(db.trackDao())
         cache = VisualsCache(tmp.newFolder("visuals"), FakeAnalysisEngine())
     }
 
@@ -73,7 +77,7 @@ class LibraryRepositoryTest {
             source = source,
             settings = SettingsStore(settings),
             db = db,
-            trackDao = db.trackDao(),
+            trackDao = trackDao,
             analysisDao = db.analysisDao(),
             lock = lock,
             visualsCache = cache,
@@ -410,6 +414,28 @@ class LibraryRepositoryTest {
     }
 
     @Test
+    fun unchangedResyncWritesNoRows() = runTest {
+        val a = track(1, "A/", "a.mp3")
+        val b = track(2, "A/", "b.mp3")
+        source.tracks["A/"] = listOf(a, b)
+        val repo = repository()
+        repo.sync()
+        assertEquals(listOf(a.key, b.key), trackDao.upserted.toList())
+        trackDao.upserted.clear()
+        canceller.calls.clear()
+
+        repo.sync()
+        assertEquals(emptyList<String>(), trackDao.upserted.toList())
+
+        source.tracks["A/"] = listOf(a, b.copy(title = "Renamed"), track(3, "A/", "c.mp3"))
+        repo.sync()
+        assertEquals(listOf(b.key, "A/c.mp3"), trackDao.upserted.toList())
+        assertEquals("Renamed", db.trackDao().byKey(b.key)!!.title)
+        // Only a size or date change counts as a changed track.
+        assertEquals(emptyList<String>(), canceller.calls.flatten())
+    }
+
+    @Test
     fun autoSyncSurvivesFailingChangeObserver() = runTest {
         source.tracks["A/"] = tracks("A/", 1)
         source.changesError = IllegalStateException("observer not registered")
@@ -465,6 +491,15 @@ private class FakeMediaStoreSource : MediaStoreSource {
     var changesError: Exception? = null
 
     override fun changes(): Flow<Unit> = changesError?.let { e -> flow { throw e } } ?: changes
+}
+
+private class CountingTrackDao(private val delegate: TrackDao) : TrackDao by delegate {
+    val upserted: MutableList<String> = Collections.synchronizedList(mutableListOf())
+
+    override suspend fun upsert(tracks: List<TrackEntity>) {
+        upserted += tracks.map { it.key }
+        delegate.upsert(tracks)
+    }
 }
 
 private class RecordingCanceller : AnalysisCanceller {

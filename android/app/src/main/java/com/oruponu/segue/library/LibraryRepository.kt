@@ -169,9 +169,11 @@ constructor(
                     old.size != track.size || old.dateModified != track.dateModified
                 }
                 .map { it.key }
+        // Rewriting unchanged rows would make observeAll emit for every chunk.
+        val writes = chunk.filter { current[it.key] != it }
         db.withTransaction {
             analysisDao.deleteFor(changed)
-            trackDao.upsert(chunk)
+            trackDao.upsert(writes)
         }
         visualsCache.delete(changed)
         return changed
