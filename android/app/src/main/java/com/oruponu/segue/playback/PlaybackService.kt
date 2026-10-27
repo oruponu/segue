@@ -21,6 +21,7 @@ import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 import com.google.common.util.concurrent.SettableFuture
 import com.oruponu.segue.data.db.TrackDao
+import com.oruponu.segue.data.db.byKeysChunked
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
@@ -128,7 +129,7 @@ class PlaybackService : MediaLibraryService() {
 
     private suspend fun loadRestored(): Restored? {
         val saved = stateStore.saved.first()
-        val tracks = trackDao.byKeys(saved.queue).associateBy { it.key }
+        val tracks = trackDao.byKeysChunked(saved.queue).associateBy { it.key }
         val queue = restoreQueue(saved, tracks.keys) ?: return null
         return Restored(saved, queue.keys.map { tracks.getValue(it).toMediaItem() }, queue)
     }

@@ -79,4 +79,13 @@ class DaoTest {
         assertEquals(0, db.analysisDao().styles("a").size)
         assertNotNull(db.trackDao().byKey("a"))
     }
+
+    @Test
+    fun byKeysChunkedReadsEveryChunk() = runTest {
+        val keys = List(1000) { "k$it" }
+        db.trackDao().upsert(keys.map(::track))
+        val found = db.trackDao().byKeysChunked(keys + "missing").map { it.key }
+        assertEquals(keys.toSet(), found.toSet())
+        assertEquals(keys.size, found.size)
+    }
 }

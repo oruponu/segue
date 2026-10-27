@@ -10,6 +10,7 @@ import com.oruponu.segue.data.db.AnalysisDao
 import com.oruponu.segue.data.db.SegueDatabase
 import com.oruponu.segue.data.db.TrackDao
 import com.oruponu.segue.data.db.TrackEntity
+import com.oruponu.segue.data.db.byKeysChunked
 import java.util.concurrent.atomic.AtomicInteger
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -140,8 +141,7 @@ constructor(
 
     suspend fun track(key: String): TrackEntity? = trackDao.byKey(key)
 
-    suspend fun tracks(keys: List<String>): List<TrackEntity> =
-        keys.chunked(CHUNK_SIZE).flatMap { trackDao.byKeys(it) }
+    suspend fun tracks(keys: List<String>): List<TrackEntity> = trackDao.byKeysChunked(keys)
 
     // Keeps the first row of each key; rows come in _ID order.
     private fun distinctTracks(rows: List<MediaStoreTrack>): List<TrackEntity> {
