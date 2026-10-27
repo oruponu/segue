@@ -191,6 +191,7 @@ class PlaybackServiceTest {
             SavedPlayback(
                 queue = tracks.map { it.key },
                 currentKey = tracks[0].key,
+                currentIndex = 0,
                 positionMs = 1_000,
                 shuffle = true,
                 repeatMode = Player.REPEAT_MODE_ONE,
@@ -225,6 +226,7 @@ class PlaybackServiceTest {
             SavedPlayback(
                 queue = tracks.map { it.key },
                 currentKey = tracks[1].key,
+                currentIndex = 1,
                 positionMs = positionMs,
                 shuffle = true,
                 repeatMode = Player.REPEAT_MODE_ALL,
@@ -272,7 +274,13 @@ class PlaybackServiceTest {
         val survivors = tracks.map { it.key }
         assertRestored(survivors, tracks[1].key, 0, saved)
         awaitSaved("the restored queue") {
-            it == saved.copy(queue = survivors, currentKey = tracks[1].key, positionMs = 0)
+            it ==
+                saved.copy(
+                    queue = survivors,
+                    currentKey = tracks[1].key,
+                    currentIndex = 1,
+                    positionMs = 0,
+                )
         }
         Unit
     }
@@ -418,6 +426,7 @@ class PlaybackServiceTest {
                 SavedPlayback(
                     queue = List(mediaItemCount) { getMediaItemAt(it).mediaId },
                     currentKey = currentMediaItem?.mediaId,
+                    currentIndex = currentMediaItemIndex,
                     positionMs = currentPosition,
                     shuffle = shuffleModeEnabled,
                     repeatMode = repeatMode,
@@ -428,7 +437,12 @@ class PlaybackServiceTest {
         }
         val (state, playWhenReady) = restored
         assertEquals(
-            saved.copy(queue = queue, currentKey = currentKey, positionMs = state.positionMs),
+            saved.copy(
+                queue = queue,
+                currentKey = currentKey,
+                currentIndex = queue.indexOf(currentKey),
+                positionMs = state.positionMs,
+            ),
             state,
         )
         assertTrue(

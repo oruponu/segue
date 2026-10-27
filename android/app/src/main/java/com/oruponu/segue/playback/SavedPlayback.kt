@@ -6,6 +6,7 @@ import kotlinx.serialization.Serializable
 data class SavedPlayback(
     val queue: List<String> = emptyList(),
     val currentKey: String? = null,
+    val currentIndex: Int = -1,
     val positionMs: Long = 0,
     val shuffle: Boolean = false,
     val repeatMode: Int = 0,

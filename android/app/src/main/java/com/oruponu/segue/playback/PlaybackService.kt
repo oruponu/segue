@@ -168,6 +168,7 @@ class PlaybackService : MediaLibraryService() {
         SavedPlayback(
             queue = List(mediaItemCount) { getMediaItemAt(it).mediaId },
             currentKey = currentMediaItem?.mediaId,
+            currentIndex = currentMediaItemIndex,
             positionMs = currentPosition,
             shuffle = shuffleModeEnabled,
             repeatMode = repeatMode,

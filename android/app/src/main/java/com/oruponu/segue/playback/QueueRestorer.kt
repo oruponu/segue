@@ -10,7 +10,11 @@ fun restoreQueue(saved: SavedPlayback, existing: Set<String>): RestoredQueue? {
     val survivors = saved.queue.withIndex().filter { it.value in existing }
     if (survivors.isEmpty()) return null
     val keys = survivors.map { it.value }
-    val current = saved.queue.indexOf(saved.currentKey)
+    // The index tells repeated occurrences of a track apart; the key alone still restores a state
+    // saved without it.
+    val current =
+        saved.currentIndex.takeIf { saved.queue.getOrNull(it) == saved.currentKey }
+            ?: saved.queue.indexOf(saved.currentKey)
     val kept = survivors.indexOfFirst { it.index == current }
     if (kept >= 0) return RestoredQueue(keys, kept, saved.positionMs)
     val next = survivors.indexOfFirst { it.index > current }

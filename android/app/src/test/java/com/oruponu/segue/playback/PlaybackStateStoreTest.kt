@@ -53,6 +53,7 @@ class PlaybackStateStoreTest {
             SavedPlayback(
                 queue = listOf("a", "b"),
                 currentKey = "b",
+                currentIndex = 1,
                 positionMs = 1234,
                 shuffle = true,
                 repeatMode = Player.REPEAT_MODE_ONE,
@@ -73,6 +74,23 @@ class PlaybackStateStoreTest {
             )
         } finally {
             readerJob.cancelAndJoin()
+        }
+    }
+
+    @Test
+    fun stateSavedWithoutIndexReads() = runBlocking {
+        val file = File(tmp.root, "datastore/playback.json")
+        file.parentFile!!.mkdirs()
+        file.writeText("""{"queue":["a","b"],"currentKey":"b","positionMs":1234}""")
+
+        val job = Job()
+        try {
+            assertEquals(
+                SavedPlayback(listOf("a", "b"), currentKey = "b", positionMs = 1234),
+                store(file, CoroutineScope(Dispatchers.IO + job)).saved.first(),
+            )
+        } finally {
+            job.cancelAndJoin()
         }
     }
 

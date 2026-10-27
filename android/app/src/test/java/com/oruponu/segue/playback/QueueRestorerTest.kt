@@ -33,6 +33,36 @@ class QueueRestorerTest {
     }
 
     @Test
+    fun duplicateCurrentKeepsItsOccurrence() {
+        val saved =
+            SavedPlayback(
+                listOf("a", "b", "c", "a"),
+                currentKey = "a",
+                currentIndex = 3,
+                positionMs = 5000,
+            )
+        assertEquals(
+            RestoredQueue(listOf("a", "c", "a"), 2, 5000),
+            restoreQueue(saved, setOf("a", "c")),
+        )
+    }
+
+    @Test
+    fun indexOfAnotherTrackFallsBackToKey() {
+        val saved =
+            SavedPlayback(
+                listOf("a", "b", "c"),
+                currentKey = "c",
+                currentIndex = 0,
+                positionMs = 5000,
+            )
+        assertEquals(
+            RestoredQueue(listOf("a", "b", "c"), 2, 5000),
+            restoreQueue(saved, setOf("a", "b", "c")),
+        )
+    }
+
+    @Test
     fun noSurvivorsRestoresNothing() {
         val saved = SavedPlayback(listOf("a", "b"), currentKey = "a", positionMs = 5000)
         assertNull(restoreQueue(saved, emptySet()))
