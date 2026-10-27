@@ -127,8 +127,11 @@ constructor(
         val row = analysisDao.analysis(key)?.takeIf { it.analysisVersion == engine.analysisVersion }
         val cached = visualsCache.read(key)
         task.visuals = cached
-        if (row != null && row.status != AnalysisStatus.OK) {
-            emit(task, Failed(row.status.toSegueStatus(), cached))
+        val recorded = row?.status?.takeIf { it != AnalysisStatus.OK }?.toSegueStatus()
+        // An analysis failure happened after decoding, so lost visuals can be rebuilt without
+        // retrying the analysis.
+        if (recorded != null && (cached != null || recorded != SegueStatus.ANALYSIS_FAILED)) {
+            emit(task, Failed(recorded, cached))
             return
         }
         val usableRow = row?.takeIf { it.stylesDone || modelProvider.unavailable }
@@ -150,9 +153,13 @@ constructor(
                             engine.writeVisuals(audio, visualsCache.tempFor(key).path)
                             val committed = commitVisuals(snapshot) ?: return
                             task.visuals = committed
-                            emit(task, VisualsReady(committed))
+                            if (recorded == null) emit(task, VisualsReady(committed))
                             committed
                         }
+                if (recorded != null) {
+                    emit(task, Failed(recorded, ready))
+                    return
+                }
                 if (usableRow != null) {
                     emit(task, Complete(ready, storedMusic(usableRow)))
                     return

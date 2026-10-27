@@ -304,6 +304,55 @@ class AnalysisRepositoryTest {
         }
 
     @Test
+    fun recordedDecodeFailureWithoutVisualsFailsWithoutDecode() =
+        runBlocking<Unit> {
+            addTracks(A)
+            saveRow(A, status = AnalysisStatus.DECODE_FAILED)
+            val repo = repository()
+
+            repo.setCurrent(A)
+
+            assertEquals(Failed(SegueStatus.DECODE_FAILED, null), repo.await<Failed>(A))
+            assertEquals(0, engine.decodes.get())
+        }
+
+    @Test
+    fun recordedAnalysisFailureWithVisualsFailsWithoutDecode() =
+        runBlocking<Unit> {
+            addTracks(A)
+            saveRow(A, status = AnalysisStatus.ANALYSIS_FAILED)
+            writeCache(A)
+            val repo = repository()
+
+            repo.setCurrent(A)
+
+            val failed = repo.await<Failed>(A)
+            assertEquals(SegueStatus.ANALYSIS_FAILED, failed.status)
+            assertNotNull(failed.visuals)
+            assertEquals(0, engine.decodes.get())
+        }
+
+    @Test
+    fun recordedAnalysisFailureRebuildsMissingVisuals() =
+        runBlocking<Unit> {
+            addTracks(A)
+            saveRow(A, status = AnalysisStatus.ANALYSIS_FAILED)
+            val repo = repository()
+
+            repo.setCurrent(A)
+
+            val failed = repo.await<Failed>(A)
+            idle()
+            assertEquals(SegueStatus.ANALYSIS_FAILED, failed.status)
+            assertNotNull(failed.visuals)
+            assertEquals(1, engine.decodes.get())
+            assertEquals(1, engine.writes.get())
+            assertEquals(0, engine.analyzes.get())
+            assertTrue(cache.fileFor(A).exists())
+            assertEquals(AnalysisStatus.ANALYSIS_FAILED, row(A)!!.status)
+        }
+
+    @Test
     fun oldAnalysisVersionIsIgnored() =
         runBlocking<Unit> {
             addTracks(A)
