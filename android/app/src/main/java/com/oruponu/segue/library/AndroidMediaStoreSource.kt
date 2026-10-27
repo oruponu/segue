@@ -1,6 +1,8 @@
 package com.oruponu.segue.library
 
+import android.Manifest
 import android.content.Context
+import android.content.pm.PackageManager
 import android.database.ContentObserver
 import android.provider.MediaStore.Audio.Media
 import androidx.core.database.getLongOrNull
@@ -41,6 +43,7 @@ constructor(
 
     override suspend fun folders(): List<String> =
         withContext(ioDispatcher) {
+            requirePermission()
             val folders = TreeSet<String>()
             context.contentResolver
                 .query(uri, arrayOf(Media.RELATIVE_PATH), "is_music=1", null, null)
@@ -53,6 +56,7 @@ constructor(
 
     override suspend fun query(folder: String): List<MediaStoreTrack> =
         withContext(ioDispatcher) {
+            requirePermission()
             val (selection, args) = musicSelection(folder)
             // A null cursor means MediaStore is unavailable; an empty result would wipe the
             // library.
@@ -103,6 +107,17 @@ constructor(
                 }
             }
         }
+
+    // Without the permission MediaStore does not throw; it returns only this app's own files,
+    // which a sync would take as every other track having been deleted.
+    private fun requirePermission() {
+        if (
+            context.checkSelfPermission(Manifest.permission.READ_MEDIA_AUDIO) !=
+                PackageManager.PERMISSION_GRANTED
+        ) {
+            throw SecurityException("READ_MEDIA_AUDIO is not granted")
+        }
+    }
 
     override fun changes(): Flow<Unit> = callbackFlow {
         val observer =
