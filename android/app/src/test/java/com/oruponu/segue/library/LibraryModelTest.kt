@@ -79,4 +79,28 @@ class LibraryModelTest {
         assertEquals(0L, entity.durationMs)
         assertEquals("path\u0000Music/X/\u0000Album", entity.albumKey)
     }
+
+    @Test
+    fun toEntityTreatsUnknownTagsAsMissing() {
+        val entity =
+            MediaStoreTrack(
+                    id = 1,
+                    displayName = "loose.m4a",
+                    relativePath = "Music/X/",
+                    title = null,
+                    album = "<unknown>",
+                    artist = "<unknown>",
+                    albumArtist = "<unknown>",
+                    cdTrackNumber = null,
+                    discNumber = null,
+                    durationMs = null,
+                    size = 10,
+                    dateModified = 20,
+                )
+                .toEntity()
+        assertEquals(UNKNOWN_ALBUM, entity.album)
+        assertNull(entity.artist)
+        assertNull(entity.albumArtist)
+        assertEquals("path\u0000Music/X/\u0000$UNKNOWN_ALBUM", entity.albumKey)
+    }
 }

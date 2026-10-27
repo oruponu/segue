@@ -1,5 +1,6 @@
 package com.oruponu.segue.library
 
+import android.provider.MediaStore
 import com.oruponu.segue.data.db.TrackEntity
 
 const val UNKNOWN_ALBUM = "Unknown Album"
@@ -37,15 +38,20 @@ fun albumKeyOf(album: String?, albumArtist: String?, relativePath: String): Stri
     else "artist\u0000$albumArtist\u0000$name"
 }
 
-fun MediaStoreTrack.toEntity(): TrackEntity =
-    TrackEntity(
+// MediaStore fills some missing tags with "<unknown>", e.g. the artist of an untagged file.
+fun knownTag(value: String?): String? = value?.takeUnless { it == MediaStore.UNKNOWN_STRING }
+
+fun MediaStoreTrack.toEntity(): TrackEntity {
+    val album = knownTag(this.album)
+    val albumArtist = knownTag(this.albumArtist)
+    return TrackEntity(
         key = trackKey(relativePath, displayName),
         mediaStoreId = id,
         relativePath = relativePath,
         displayName = displayName,
         title = displayTitle(title, displayName),
         album = albumDisplayName(album),
-        artist = artist,
+        artist = knownTag(artist),
         albumArtist = albumArtist,
         discNumber = parseLeadingNumber(discNumber),
         trackNumber = parseLeadingNumber(cdTrackNumber),
@@ -54,6 +60,7 @@ fun MediaStoreTrack.toEntity(): TrackEntity =
         dateModified = dateModified,
         albumKey = albumKeyOf(album, albumArtist, relativePath),
     )
+}
 
 fun musicSelection(folder: String): Pair<String, Array<String>> {
     val escaped = folder.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
