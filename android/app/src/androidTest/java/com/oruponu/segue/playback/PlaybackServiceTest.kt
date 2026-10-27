@@ -202,6 +202,23 @@ class PlaybackServiceTest {
     }
 
     @Test
+    fun queueChangedWhilePausedIsSaved() = runBlocking {
+        start(listOf(tracks[0].toMediaItem()))
+        awaitPlayer("playing") { it.isPlaying }
+        onMain { controller().pause() }
+        awaitPlayer("paused") { !it.isPlaying }
+        awaitSaved("the queue") { it.queue == listOf(tracks[0].key) }
+
+        // Neither change moves to another item, so only the playlist change can save them.
+        onMain { controller().addMediaItem(tracks[1].toMediaItem()) }
+        awaitSaved("the added item") { it.queue == tracks.map { t -> t.key } }
+        onMain { controller().moveMediaItem(1, 0) }
+        val saved =
+            awaitSaved("the moved item") { it.queue == tracks.reversed().map { t -> t.key } }
+        assertEquals(tracks[0].key, saved.currentKey)
+    }
+
+    @Test
     fun startupRestoresSavedStatePaused() = runBlocking {
         val positionMs = (tracks[1].durationMs / 2).coerceAtMost(3_000)
         val saved =

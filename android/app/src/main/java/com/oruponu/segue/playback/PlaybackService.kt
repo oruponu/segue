@@ -207,7 +207,10 @@ class PlaybackService : MediaLibraryService() {
         }
 
         override fun onTimelineChanged(timeline: Timeline, reason: Int) {
-            if (reason == Player.TIMELINE_CHANGE_REASON_PLAYLIST_CHANGED) consecutiveErrors = 0
+            if (reason != Player.TIMELINE_CHANGE_REASON_PLAYLIST_CHANGED) return
+            consecutiveErrors = 0
+            // Adding or moving an item other than the current one saves nothing else.
+            save()
         }
 
         override fun onPlaybackStateChanged(playbackState: Int) {
