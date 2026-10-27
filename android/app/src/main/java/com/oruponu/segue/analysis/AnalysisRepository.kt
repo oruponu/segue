@@ -69,6 +69,9 @@ constructor(
     fun setCurrent(key: String?) {
         synchronized(guard) {
             if (key != null && key == currentKey && running?.key == key) return
+            // Only the current track's UI subscribes, so a track that stops being current drops
+            // its visuals instead of keeping them for the rest of the process.
+            currentKey?.takeIf { it != key }?.let { states[it]?.value = Pending }
             currentKey = key
             start(key)
         }

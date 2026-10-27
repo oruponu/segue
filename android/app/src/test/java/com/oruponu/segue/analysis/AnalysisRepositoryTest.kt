@@ -479,6 +479,22 @@ class AnalysisRepositoryTest {
         }
 
     @Test
+    fun previousTrackDropsItsVisuals() =
+        runBlocking<Unit> {
+            addTracks(A, B)
+            saveRow(A)
+            writeCache(A)
+            val repo = repository()
+
+            repo.setCurrent(A)
+            repo.await<Complete>(A)
+            repo.setCurrent(B)
+
+            assertEquals(Pending, repo.state(A).value)
+            repo.await<Complete>(B)
+        }
+
+    @Test
     fun staleGenerationDoesNotEmit() =
         runBlocking<Unit> {
             addTracks(A, B)
@@ -576,7 +592,7 @@ class AnalysisRepositoryTest {
             awaitDone(engine.tokens[0])
 
             assertNull(row(A))
-            assertTrue(repo.state(A).value is VisualsReady)
+            assertEquals(Pending, repo.state(A).value)
             repo.await<Complete>(B)
             assertNotNull(row(B))
         }
