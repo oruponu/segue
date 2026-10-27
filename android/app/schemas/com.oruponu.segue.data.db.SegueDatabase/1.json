@@ -1,0 +1,235 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 1,
+    "identityHash": "b4996351a72cf1d6818d4c4d22902dc7",
+    "entities": [
+      {
+        "tableName": "tracks",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`key` TEXT NOT NULL, `media_store_id` INTEGER NOT NULL, `relative_path` TEXT NOT NULL, `display_name` TEXT NOT NULL, `title` TEXT NOT NULL, `album` TEXT NOT NULL, `artist` TEXT, `album_artist` TEXT, `disc_number` INTEGER, `track_number` INTEGER, `duration_ms` INTEGER NOT NULL, `size` INTEGER NOT NULL, `date_modified` INTEGER NOT NULL, `album_key` TEXT NOT NULL, PRIMARY KEY(`key`))",
+        "fields": [
+          {
+            "fieldPath": "key",
+            "columnName": "key",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "mediaStoreId",
+            "columnName": "media_store_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "relativePath",
+            "columnName": "relative_path",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "displayName",
+            "columnName": "display_name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "title",
+            "columnName": "title",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "album",
+            "columnName": "album",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "artist",
+            "columnName": "artist",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "albumArtist",
+            "columnName": "album_artist",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "discNumber",
+            "columnName": "disc_number",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "trackNumber",
+            "columnName": "track_number",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "durationMs",
+            "columnName": "duration_ms",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "size",
+            "columnName": "size",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "dateModified",
+            "columnName": "date_modified",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "albumKey",
+            "columnName": "album_key",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "key"
+          ]
+        }
+      },
+      {
+        "tableName": "analysis",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`track_key` TEXT NOT NULL, `analysis_version` INTEGER NOT NULL, `status` TEXT NOT NULL, `styles_done` INTEGER NOT NULL, `bpm` REAL, `bpm_confidence` REAL, `key_note` INTEGER, `key_scale` INTEGER, `key_confidence` REAL, `analyzed_at` INTEGER NOT NULL, PRIMARY KEY(`track_key`), FOREIGN KEY(`track_key`) REFERENCES `tracks`(`key`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "trackKey",
+            "columnName": "track_key",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "analysisVersion",
+            "columnName": "analysis_version",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "status",
+            "columnName": "status",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "stylesDone",
+            "columnName": "styles_done",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "bpm",
+            "columnName": "bpm",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "bpmConfidence",
+            "columnName": "bpm_confidence",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "keyNote",
+            "columnName": "key_note",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "keyScale",
+            "columnName": "key_scale",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "keyConfidence",
+            "columnName": "key_confidence",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "analyzedAt",
+            "columnName": "analyzed_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "track_key"
+          ]
+        },
+        "foreignKeys": [
+          {
+            "table": "tracks",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "track_key"
+            ],
+            "referencedColumns": [
+              "key"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "track_styles",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`track_key` TEXT NOT NULL, `rank` INTEGER NOT NULL, `label_index` INTEGER NOT NULL, `confidence` REAL NOT NULL, PRIMARY KEY(`track_key`, `rank`), FOREIGN KEY(`track_key`) REFERENCES `tracks`(`key`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "trackKey",
+            "columnName": "track_key",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "rank",
+            "columnName": "rank",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "labelIndex",
+            "columnName": "label_index",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "confidence",
+            "columnName": "confidence",
+            "affinity": "REAL",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "track_key",
+            "rank"
+          ]
+        },
+        "foreignKeys": [
+          {
+            "table": "tracks",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "track_key"
+            ],
+            "referencedColumns": [
+              "key"
+            ]
+          }
+        ]
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'b4996351a72cf1d6818d4c4d22902dc7')"
+    ]
+  }
+}

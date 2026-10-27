@@ -3,6 +3,7 @@
 #include <cmath>
 
 #include "constants.h"
+#include "log.h"
 
 namespace segue {
 namespace {
@@ -17,7 +18,10 @@ FeatureAccumulator::FeatureAccumulator() { mono_.reserve(static_cast<size_t>(kMa
 bool FeatureAccumulator::onFrames(const float* s, size_t frames) {
   // Enforced here whether or not the container reports a duration (this also keeps mono_ within the
   // reserved capacity)
-  if (static_cast<int64_t>(mono_.size() + frames) > kMaxDecodeSamples) return false;
+  if (static_cast<int64_t>(mono_.size() + frames) > kMaxDecodeSamples) {
+    SEGUE_LOGE("Decoded audio exceeds %lld samples", static_cast<long long>(kMaxDecodeSamples));
+    return false;
+  }
   for (size_t i = 0; i < frames; ++i) {
     const float left = s[2 * i];
     const float right = s[2 * i + 1];

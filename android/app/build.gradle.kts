@@ -2,6 +2,9 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.hilt)
+    alias(libs.plugins.ksp)
+    alias(libs.plugins.room)
 }
 
 android {
@@ -13,9 +16,13 @@ android {
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        ndk { abiFilters += "arm64-v8a" }
     }
 
     buildTypes {
+        debug { applicationIdSuffix = ".dev" }
         release {
             isMinifyEnabled = false
             proguardFiles(
@@ -35,6 +42,12 @@ android {
         shaders = false
     }
 
+    sourceSets { getByName("main") { assets.srcDir("../../models") } }
+
+    androidResources { noCompress += "onnx" }
+
+    testOptions { unitTests { isIncludeAndroidResources = true } }
+
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
@@ -44,6 +57,10 @@ android {
 
 kotlin {
     jvmToolchain(17)
+}
+
+room {
+    schemaDirectory("$projectDir/schemas")
 }
 
 dependencies {
@@ -73,12 +90,33 @@ dependencies {
     // Local tests: jUnit, coroutines, Android runner
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.test.core)
+    testImplementation(libs.androidx.room.testing)
 
     // Instrumented tests: jUnit rules and runners
     androidTestImplementation(libs.androidx.test.core)
+    androidTestImplementation(libs.androidx.room.testing)
+    kspAndroidTest(libs.hilt.compiler)
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.androidx.test.rules)
     androidTestImplementation(libs.androidx.test.espresso.core)
+
+    // Data layer
+    implementation(project(":core-bridge"))
+    implementation(libs.hilt.android)
+    ksp(libs.hilt.compiler)
+    implementation(libs.androidx.room.runtime)
+    ksp(libs.androidx.room.compiler)
+    implementation(libs.androidx.datastore)
+    implementation(libs.kotlinx.serialization.json)
+    implementation(libs.kotlinx.coroutines.android)
+
+    // Playback and images
+    implementation(libs.androidx.media3.exoplayer)
+    implementation(libs.androidx.media3.session)
+    implementation(libs.coil)
 
     // Navigation
     implementation(libs.androidx.navigation3.ui)
