@@ -14,4 +14,8 @@
     <string name="empty_folder">このフォルダには曲がありません</string>
     <string name="reselect_folder">フォルダを選び直す</string>
     <string name="back">戻る</string>
+    <string name="folder_picker_title">フォルダを選ぶ</string>
+    <string name="folders_empty">音楽ファイルが見つかりません</string>
+    <string name="folders_failed">フォルダを読み込めません</string>
+    <string name="retry">再試行</string>
 </resources>

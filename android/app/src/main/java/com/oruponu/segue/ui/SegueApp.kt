@@ -16,8 +16,10 @@ import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
+import com.oruponu.segue.library.SyncState
 import com.oruponu.segue.ui.library.AlbumDetailScreen
 import com.oruponu.segue.ui.library.AlbumListScreen
+import com.oruponu.segue.ui.library.FolderPickerScreen
 import com.oruponu.segue.ui.library.LibraryViewModel
 import com.oruponu.segue.ui.library.album
 
@@ -39,6 +41,10 @@ fun SegueApp() {
         }
     }
 
+    LaunchedEffect(libraryState.sync) {
+        if (libraryState.sync is SyncState.PermissionDenied) permission.refresh()
+    }
+
     NavDisplay(
         backStack = backStack,
         modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
@@ -54,7 +60,9 @@ fun SegueApp() {
                     AlbumListScreen(
                         state = libraryState,
                         onAlbumClick = { backStack.add(AlbumDetail(it.key)) },
-                        onPickFolder = {},
+                        onPickFolder = {
+                            if (backStack.lastOrNull() != FolderPicker) backStack.add(FolderPicker)
+                        },
                     )
                 }
                 entry<AlbumDetail> { key ->
@@ -70,6 +78,12 @@ fun SegueApp() {
                     } else if (libraryState.loaded) {
                         LaunchedEffect(key) { backStack.remove(key) }
                     }
+                }
+                entry<FolderPicker> {
+                    FolderPickerScreen(
+                        onDone = { backStack.remove(FolderPicker) },
+                        onPermissionLost = permission::refresh,
+                    )
                 }
                 entry<Permission> { PermissionScreen(onGranted = permission::refresh) }
             },
