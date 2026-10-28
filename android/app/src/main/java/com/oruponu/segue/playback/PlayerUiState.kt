@@ -10,6 +10,8 @@ data class PlayerUiState(
     /** SystemClock.elapsedRealtime() when [positionMs] was read. */
     val positionAtElapsedMs: Long = 0,
     val durationMs: Long = 0,
+    val title: String? = null,
+    val artist: String? = null,
     val speed: Float = 1f,
     val pitchSemitones: Int = 0,
     val shuffle: Boolean = false,

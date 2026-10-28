@@ -51,6 +51,20 @@ class PlaybackConnection @Inject constructor(@ApplicationContext private val con
     /** Connects unless already connected or connecting. May be called from any thread. */
     fun connect() = onMain(::startConnecting)
 
+    /**
+     * Releases the controller, drops operations waiting for it and resets [state]. Playback goes on
+     * in the service. The next [connect] or operation connects again. May be called from any
+     * thread.
+     */
+    fun disconnect() = onMain {
+        pending.clear()
+        connecting?.let(MediaController::releaseFuture)
+        connecting = null
+        controller?.release()
+        controller = null
+        _state.value = PlayerUiState()
+    }
+
     fun playAlbum(tracks: List<TrackEntity>, startIndex: Int) {
         val items = tracks.map { it.toMediaItem() }
         perform {
@@ -124,6 +138,8 @@ class PlaybackConnection @Inject constructor(@ApplicationContext private val con
     }
 
     private fun onConnected(future: ListenableFuture<MediaController>) {
+        // disconnect() released this future, or a newer connection replaced it.
+        if (connecting !== future) return
         connecting = null
         val connected =
             try {
@@ -154,6 +170,8 @@ class PlaybackConnection @Inject constructor(@ApplicationContext private val con
             positionAtElapsedMs = readAt,
             // C.TIME_UNSET is negative.
             durationMs = duration.coerceAtLeast(0),
+            title = currentMediaItem?.mediaMetadata?.title?.toString(),
+            artist = currentMediaItem?.mediaMetadata?.artist?.toString(),
             speed = playbackParameters.speed,
             pitchSemitones = semitonesOf(playbackParameters.pitch),
             shuffle = shuffleModeEnabled,

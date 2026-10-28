@@ -8,11 +8,15 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
+import com.oruponu.segue.playback.PlaybackConnection
 import com.oruponu.segue.theme.SegueTheme
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+    @Inject lateinit var connection: PlaybackConnection
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -27,5 +31,16 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        connection.connect()
+    }
+
+    override fun onStop() {
+        super.onStop()
+        // Disconnecting on a configuration change would cancel and restart the running analysis.
+        if (!isChangingConfigurations) connection.disconnect()
     }
 }

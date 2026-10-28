@@ -488,14 +488,7 @@ class PlaybackServiceTest {
         }
     }
 
-    // PlaybackConnection cannot disconnect yet, and an earlier test class in this process may have
-    // left it bound, which would keep the service alive. Its listener resets it on release.
-    private fun releaseAppConnection() {
-        // TODO: use PlaybackConnection.disconnect() once it exists.
-        val field =
-            PlaybackConnection::class.java.getDeclaredField("controller").apply {
-                isAccessible = true
-            }
-        (field.get(entryPoint.playbackConnection()) as MediaController?)?.release()
-    }
+    // An earlier test class in this process may have left the app's connection bound, which would
+    // keep the service alive. Called on the main thread, where disconnect() runs at once.
+    private fun releaseAppConnection() = entryPoint.playbackConnection().disconnect()
 }

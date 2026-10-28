@@ -2,6 +2,7 @@ package com.oruponu.segue.playback
 
 import android.Manifest
 import android.content.ComponentName
+import android.content.Intent
 import android.os.ParcelFileDescriptor
 import android.os.SystemClock
 import androidx.media3.common.PlaybackParameters
@@ -16,6 +17,7 @@ import com.oruponu.segue.library.AndroidMediaStoreSource
 import com.oruponu.segue.library.SyncState
 import com.oruponu.segue.library.toEntity
 import dagger.hilt.android.EntryPointAccessors
+import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
@@ -117,6 +119,57 @@ class PlaybackConnectionTest {
                 it.isPlaying && it.currentKey == tracks[1].key
             }
         assertTrue(state.hasNext)
+        assertEquals(tracks[1].title, state.title)
+        assertEquals(tracks[1].artist, state.artist)
+    }
+
+    @Test
+    fun playbackContinuesAfterDisconnect() {
+        connection.playAlbum(tracks, 0)
+        awaitState("playing the first track") { it.isPlaying && it.currentKey == tracks[0].key }
+
+        connection.disconnect()
+
+        awaitState("the default state") { it == PlayerUiState() }
+        assertTrue("The service stopped playing", onMain { controller!!.isPlaying })
+    }
+
+    @Test
+    fun disconnectLetsTheServiceBeDestroyed() {
+        connection.playAlbum(tracks, 0)
+        awaitState("playing the first track") { it.isPlaying && it.currentKey == tracks[0].key }
+        // A controller on the session token itself does not bind the service, and it is
+        // disconnected when onDestroy releases the session.
+        val sessionToken = onMain { controller!!.connectedToken!! }
+        val destroyed = CountDownLatch(1)
+        val watcher = onMain {
+            MediaController.Builder(context, sessionToken)
+                .setListener(
+                    object : MediaController.Listener {
+                        override fun onDisconnected(controller: MediaController) =
+                            destroyed.countDown()
+                    },
+                )
+                .buildAsync()
+        }
+            .get(TIMEOUT_MS, TimeUnit.MILLISECONDS)
+
+        connection.disconnect()
+        onMain {
+            controller!!.reset()
+            controller!!.release()
+            controller = null
+        }
+        context.stopService(Intent(context, PlaybackService::class.java))
+
+        try {
+            assertTrue(
+                "The app's connection kept the service alive",
+                destroyed.await(TIMEOUT_MS, TimeUnit.MILLISECONDS),
+            )
+        } finally {
+            onMain { watcher.release() }
+        }
     }
 
     @Test
