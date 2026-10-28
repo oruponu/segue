@@ -45,12 +45,22 @@ constructor(
         withContext(ioDispatcher) {
             requirePermission()
             val folders = TreeSet<String>()
-            context.contentResolver
-                .query(uri, arrayOf(Media.RELATIVE_PATH), "is_music=1", null, null)
-                ?.use { cursor ->
-                    val column = cursor.getColumnIndexOrThrow(Media.RELATIVE_PATH)
-                    while (cursor.moveToNext()) cursor.getStringOrNull(column)?.let(folders::add)
+            val cursor =
+                checkNotNull(
+                    context.contentResolver.query(
+                        uri,
+                        arrayOf(Media.RELATIVE_PATH),
+                        "is_music=1",
+                        null,
+                        null,
+                    ),
+                ) {
+                    "MediaStore returned no cursor"
                 }
+            cursor.use { c ->
+                val column = c.getColumnIndexOrThrow(Media.RELATIVE_PATH)
+                while (c.moveToNext()) c.getStringOrNull(column)?.let(folders::add)
+            }
             folders.toList()
         }
 
