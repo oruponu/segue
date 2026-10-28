@@ -106,6 +106,7 @@ dependencies {
     // Data layer
     implementation(project(":core-bridge"))
     implementation(libs.hilt.android)
+    implementation(libs.hilt.lifecycle.viewmodel.compose)
     ksp(libs.hilt.compiler)
     implementation(libs.androidx.room.runtime)
     ksp(libs.androidx.room.compiler)
