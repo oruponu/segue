@@ -1,13 +1,14 @@
 package com.oruponu.segue.ui
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
@@ -15,12 +16,14 @@ import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
+import com.oruponu.segue.ui.library.AlbumListScreen
 import com.oruponu.segue.ui.library.LibraryViewModel
 
 @Composable
 fun SegueApp() {
     val permission = rememberAudioPermissionState()
     val library: LibraryViewModel = hiltViewModel()
+    val libraryState by library.state.collectAsStateWithLifecycle()
     val backStack = rememberNavBackStack(if (permission.granted) Albums else Permission)
 
     LaunchedEffect(permission.granted) {
@@ -45,7 +48,9 @@ fun SegueApp() {
             ),
         entryProvider =
             entryProvider {
-                entry<Albums> { Box(Modifier.fillMaxSize()) }
+                entry<Albums> {
+                    AlbumListScreen(state = libraryState)
+                }
                 entry<Permission> { PermissionScreen(onGranted = permission::refresh) }
             },
     )

@@ -7,6 +7,10 @@ import com.oruponu.segue.library.LibraryRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlin.coroutines.cancellation.CancellationException
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 private const val TAG = "LibraryViewModel"
@@ -14,6 +18,11 @@ private const val TAG = "LibraryViewModel"
 @HiltViewModel
 class LibraryViewModel @Inject constructor(private val repository: LibraryRepository) :
     ViewModel() {
+    val state: StateFlow<LibraryUiState> =
+        repository.albums
+            .map { LibraryUiState(it, loaded = true) }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), LibraryUiState())
+
     fun onPermissionGranted() {
         viewModelScope.launch {
             try {
