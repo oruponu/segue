@@ -13,4 +13,5 @@
     <string name="choose_folder">フォルダを選ぶ</string>
     <string name="empty_folder">このフォルダには曲がありません</string>
     <string name="reselect_folder">フォルダを選び直す</string>
+    <string name="back">戻る</string>
 </resources>

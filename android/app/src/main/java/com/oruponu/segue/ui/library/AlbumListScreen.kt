@@ -1,6 +1,7 @@
 package com.oruponu.segue.ui.library
 
 import androidx.annotation.StringRes
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -39,6 +40,7 @@ import com.oruponu.segue.ui.common.formatDuration
 @Composable
 fun AlbumListScreen(
     state: LibraryUiState,
+    onAlbumClick: (Album) -> Unit,
     onPickFolder: () -> Unit,
 ) {
     Scaffold(
@@ -76,7 +78,11 @@ fun AlbumListScreen(
                     val sync = state.sync
                     if (sync is SyncState.Syncing) item { SyncProgress(sync) }
                     items(state.albums, key = { it.key }) { album ->
-                        AlbumRow(album)
+                        AlbumRow(
+                            album,
+                            enabled = !state.isSyncing,
+                            onClick = { onAlbumClick(album) },
+                        )
                     }
                 }
         }
@@ -110,11 +116,12 @@ private fun SyncProgress(sync: SyncState.Syncing) {
 }
 
 @Composable
-private fun AlbumRow(album: Album) {
+private fun AlbumRow(album: Album, enabled: Boolean, onClick: () -> Unit) {
     ListItem(
         headlineContent = {
             Text(albumTitle(album.title), maxLines = 2, overflow = TextOverflow.Ellipsis)
         },
+        modifier = Modifier.clickable(enabled = enabled, onClick = onClick),
         supportingContent = {
             TrailingRow(
                 artistName(album.artist),

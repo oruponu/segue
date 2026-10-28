@@ -16,8 +16,10 @@ import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
+import com.oruponu.segue.ui.library.AlbumDetailScreen
 import com.oruponu.segue.ui.library.AlbumListScreen
 import com.oruponu.segue.ui.library.LibraryViewModel
+import com.oruponu.segue.ui.library.album
 
 @Composable
 fun SegueApp() {
@@ -51,8 +53,23 @@ fun SegueApp() {
                 entry<Albums> {
                     AlbumListScreen(
                         state = libraryState,
+                        onAlbumClick = { backStack.add(AlbumDetail(it.key)) },
                         onPickFolder = {},
                     )
+                }
+                entry<AlbumDetail> { key ->
+                    val album = libraryState.album(key.albumKey)
+                    if (album != null) {
+                        AlbumDetailScreen(
+                            album = album,
+                            currentKey = null,
+                            isPlaying = false,
+                            onTrackClick = {},
+                            onBack = { backStack.removeLastOrNull() },
+                        )
+                    } else if (libraryState.loaded) {
+                        LaunchedEffect(key) { backStack.remove(key) }
+                    }
                 }
                 entry<Permission> { PermissionScreen(onGranted = permission::refresh) }
             },

@@ -25,3 +25,5 @@ fun LibraryUiState.empty(): LibraryEmpty? =
 
 val LibraryUiState.isSyncing: Boolean
     get() = sync is SyncState.Syncing
+
+fun LibraryUiState.album(key: String): Album? = albums.firstOrNull { it.key == key }

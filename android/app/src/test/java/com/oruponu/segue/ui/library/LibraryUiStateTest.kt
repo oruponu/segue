@@ -1,5 +1,6 @@
 package com.oruponu.segue.ui.library
 
+import com.oruponu.segue.library.Album
 import com.oruponu.segue.library.SyncState
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -31,5 +32,16 @@ class LibraryUiStateTest {
                 loaded = true,
             )
         assertNull(state.empty())
+    }
+
+    @Test
+    fun removedAlbumClosesDetail() {
+        val state =
+            LibraryUiState(
+                albums = listOf(Album("kept", "Album", null, emptyList())),
+                selectedFolder = "A/",
+                loaded = true,
+            )
+        assertNull(state.album("removed"))
     }
 }
