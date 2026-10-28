@@ -19,8 +19,11 @@ private const val TAG = "LibraryViewModel"
 class LibraryViewModel @Inject constructor(private val repository: LibraryRepository) :
     ViewModel() {
     val state: StateFlow<LibraryUiState> =
-        combine(repository.albums, repository.syncState) { albums, sync ->
-                LibraryUiState(albums, sync, loaded = true)
+        combine(repository.albums, repository.syncState, repository.selectedFolder) {
+                albums,
+                sync,
+                folder ->
+                LibraryUiState(albums, sync, folder, loaded = true)
             }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), LibraryUiState())
 

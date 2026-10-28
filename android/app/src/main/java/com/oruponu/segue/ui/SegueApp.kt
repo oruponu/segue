@@ -49,7 +49,10 @@ fun SegueApp() {
         entryProvider =
             entryProvider {
                 entry<Albums> {
-                    AlbumListScreen(state = libraryState)
+                    AlbumListScreen(
+                        state = libraryState,
+                        onPickFolder = {},
+                    )
                 }
                 entry<Permission> { PermissionScreen(onGranted = permission::refresh) }
             },

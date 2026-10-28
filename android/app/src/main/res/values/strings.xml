@@ -9,4 +9,8 @@
     <string name="album_summary">%1$d曲・%2$s</string>
     <string name="unknown_album">不明なアルバム</string>
     <string name="unknown_artist">不明なアーティスト</string>
+    <string name="no_folder">フォルダが選ばれていません</string>
+    <string name="choose_folder">フォルダを選ぶ</string>
+    <string name="empty_folder">このフォルダには曲がありません</string>
+    <string name="reselect_folder">フォルダを選び直す</string>
 </resources>
