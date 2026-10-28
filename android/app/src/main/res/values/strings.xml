@@ -1,3 +1,7 @@
 <resources>
     <string name="app_name">Segue</string>
+    <string name="library_title">ライブラリ</string>
+    <string name="permission_message">音楽ファイルを読み込むには、オーディオへのアクセスを許可してください</string>
+    <string name="grant_permission">許可する</string>
+    <string name="open_settings">設定を開く</string>
 </resources>
