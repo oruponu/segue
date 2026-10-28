@@ -1,5 +1,6 @@
 package com.oruponu.segue.ui.sheet
 
+import androidx.activity.compose.PredictiveBackHandler
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -21,7 +22,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
@@ -32,6 +37,7 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import kotlin.coroutines.cancellation.CancellationException
 import kotlin.math.roundToInt
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.launch
@@ -86,6 +92,9 @@ fun MainLayout(
                 },
                 collapsed = miniPlayer,
             )
+            // Composed last, so the analysis handler takes the back event before the player's.
+            SheetBackHandler(playerSheet)
+            SheetBackHandler(analysisSheet)
         }
     }
 }
@@ -145,6 +154,29 @@ private fun Sheet(
                     collapsed()
                 }
             }
+        }
+    }
+}
+
+/**
+ * Collapses an expanded sheet on back, following a predictive back gesture. While the sheet is
+ * collapsed the handler is off, so the event falls through to the navigation below.
+ */
+@Composable
+private fun SheetBackHandler(state: SheetState) {
+    val scope = rememberCoroutineScope()
+    // A gesture past halfway flips isExpanded; staying enabled keeps the gesture alive.
+    var inGesture by remember { mutableStateOf(false) }
+    PredictiveBackHandler(enabled = inGesture || state.isExpanded) { events ->
+        inGesture = true
+        try {
+            events.collect { state.seekTowardsCollapsed(it.progress) }
+            state.collapse()
+        } catch (e: CancellationException) {
+            scope.launch { state.expand() }
+            throw e
+        } finally {
+            inGesture = false
         }
     }
 }

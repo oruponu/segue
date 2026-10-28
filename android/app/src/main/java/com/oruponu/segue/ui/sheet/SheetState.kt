@@ -12,6 +12,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.util.lerp
 
 enum class SheetValue {
     Collapsed,
@@ -70,6 +71,18 @@ class SheetState(initial: SheetValue) {
     internal fun placementOffset(): Float =
         draggable.offset.takeUnless { it.isNaN() }
             ?: if (value == SheetValue.Expanded) 0f else collapsedOffset
+
+    internal suspend fun seekTowardsCollapsed(fraction: Float) {
+        draggable.anchoredDrag { anchors ->
+            dragTo(
+                lerp(
+                    anchors.positionOf(SheetValue.Expanded),
+                    anchors.positionOf(SheetValue.Collapsed),
+                    fraction,
+                ),
+            )
+        }
+    }
 
     companion object {
         val Saver: Saver<SheetState, SheetValue> =

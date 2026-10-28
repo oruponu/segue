@@ -1,5 +1,6 @@
 package com.oruponu.segue.ui.sheet
 
+import androidx.activity.BackEventCompat
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.material3.Button
@@ -23,7 +24,9 @@ import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.ui.NavDisplay
+import androidx.test.espresso.Espresso
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.platform.app.InstrumentationRegistry
 import com.oruponu.segue.ui.AlbumDetail
 import com.oruponu.segue.ui.Albums
 import kotlinx.coroutines.CoroutineScope
@@ -84,6 +87,13 @@ class MainLayoutTest {
         node(SheetTags.ANALYSIS).assertExists()
     }
 
+    private fun assertHalfway(sheet: SheetState) {
+        compose.runOnIdle { assertEquals(0.5f, sheet.progress, 0.05f) }
+    }
+
+    private fun backEvent(progress: Float) =
+        BackEventCompat(0f, 0f, progress, BackEventCompat.EDGE_LEFT)
+
     @Test
     fun tapMiniPlayerExpands() {
         setContent()
@@ -126,6 +136,29 @@ class MainLayoutTest {
     }
 
     @Test
+    fun backClosesAnalysisThenPlayerThenDetailThenExits() {
+        setContent()
+        openBoth()
+
+        Espresso.pressBack()
+        node(SheetTags.ANALYSIS).assertDoesNotExist()
+        node(SheetTags.PLAYER).assertExists()
+
+        Espresso.pressBack()
+        node(SheetTags.PLAYER).assertDoesNotExist()
+        compose.onNodeWithText("detail").assertExists()
+
+        Espresso.pressBack()
+        compose.onNodeWithText("albums").assertExists()
+        assertEquals(listOf<NavKey>(Albums), backStack.toList())
+
+        val activity = compose.activity
+        Espresso.pressBackUnconditionally()
+        InstrumentationRegistry.getInstrumentation().waitForIdleSync()
+        assertTrue(activity.isFinishing || activity.isDestroyed)
+    }
+
+    @Test
     fun expandBeforeShownOpensExpanded() {
         setContent(show = false)
         compose.runOnIdle { scope.launch { player.expand() } }
@@ -141,5 +174,46 @@ class MainLayoutTest {
 
         compose.runOnIdle { showPlayer = true }
         compose.runOnIdle { assertTrue(contentPadding!!.calculateBottomPadding() >= 72.dp) }
+    }
+
+    @Test
+    fun cancelledBackGestureRestoresSheets() {
+        setContent()
+        openBoth()
+        val dispatcher = compose.activity.onBackPressedDispatcher
+        compose.runOnUiThread {
+            dispatcher.dispatchOnBackStarted(backEvent(0f))
+            dispatcher.dispatchOnBackProgressed(backEvent(0.5f))
+        }
+        compose.waitForIdle()
+        assertHalfway(analysis)
+        compose.runOnUiThread { dispatcher.dispatchOnBackCancelled() }
+
+        node(SheetTags.ANALYSIS).assertExists()
+        node(SheetTags.ANALYSIS_BUTTON).assertDoesNotExist()
+        node(SheetTags.MINI_PLAYER).assertDoesNotExist()
+        assertEquals(listOf(Albums, AlbumDetail("a")), backStack.toList())
+
+        Espresso.pressBack()
+        node(SheetTags.ANALYSIS).assertDoesNotExist()
+        node(SheetTags.PLAYER).assertExists()
+    }
+
+    @Test
+    fun completedBackGestureClosesOnlyAnalysis() {
+        setContent()
+        openBoth()
+        val dispatcher = compose.activity.onBackPressedDispatcher
+        compose.runOnUiThread {
+            dispatcher.dispatchOnBackStarted(backEvent(0f))
+            dispatcher.dispatchOnBackProgressed(backEvent(0.5f))
+        }
+        compose.waitForIdle()
+        assertHalfway(analysis)
+        compose.runOnUiThread { dispatcher.onBackPressed() }
+
+        node(SheetTags.ANALYSIS).assertDoesNotExist()
+        node(SheetTags.PLAYER).assertExists()
+        assertEquals(listOf(Albums, AlbumDetail("a")), backStack.toList())
     }
 }
