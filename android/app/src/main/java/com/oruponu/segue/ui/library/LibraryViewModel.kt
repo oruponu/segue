@@ -9,7 +9,7 @@ import javax.inject.Inject
 import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -19,8 +19,9 @@ private const val TAG = "LibraryViewModel"
 class LibraryViewModel @Inject constructor(private val repository: LibraryRepository) :
     ViewModel() {
     val state: StateFlow<LibraryUiState> =
-        repository.albums
-            .map { LibraryUiState(it, loaded = true) }
+        combine(repository.albums, repository.syncState) { albums, sync ->
+                LibraryUiState(albums, sync, loaded = true)
+            }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), LibraryUiState())
 
     fun onPermissionGranted() {

@@ -1,10 +1,14 @@
 package com.oruponu.segue.ui.library
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -18,6 +22,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.oruponu.segue.R
 import com.oruponu.segue.library.Album
+import com.oruponu.segue.library.SyncState
 import com.oruponu.segue.library.UNKNOWN_ALBUM
 import com.oruponu.segue.ui.common.TrackArtwork
 import com.oruponu.segue.ui.common.durationMs
@@ -32,10 +37,38 @@ fun AlbumListScreen(state: LibraryUiState) {
         },
     ) { padding ->
         LazyColumn(contentPadding = padding) {
+            val sync = state.sync
+            if (sync is SyncState.Syncing) item { SyncProgress(sync) }
             items(state.albums, key = { it.key }) { album ->
                 AlbumRow(album)
             }
         }
+    }
+}
+
+@Composable
+private fun SyncProgress(sync: SyncState.Syncing) {
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        if (sync.total > 0) {
+            LinearProgressIndicator(
+                progress = { sync.done.toFloat() / sync.total },
+                modifier = Modifier.fillMaxWidth(),
+            )
+        } else {
+            LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+        }
+        Text(
+            text =
+                if (sync.total > 0)
+                    stringResource(R.string.scanning_progress, sync.done, sync.total)
+                else stringResource(R.string.scanning),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 

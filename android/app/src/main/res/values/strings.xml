@@ -4,6 +4,8 @@
     <string name="permission_message">音楽ファイルを読み込むには、オーディオへのアクセスを許可してください</string>
     <string name="grant_permission">許可する</string>
     <string name="open_settings">設定を開く</string>
+    <string name="scanning">スキャン中...</string>
+    <string name="scanning_progress">スキャン中... %1$d/%2$d</string>
     <string name="album_summary">%1$d曲・%2$s</string>
     <string name="unknown_album">不明なアルバム</string>
     <string name="unknown_artist">不明なアーティスト</string>
