@@ -141,6 +141,8 @@ constructor(
 
     suspend fun track(key: String): TrackEntity? = trackDao.byKey(key)
 
+    fun observeTrack(key: String): Flow<TrackEntity?> = trackDao.observeByKey(key)
+
     suspend fun tracks(keys: List<String>): List<TrackEntity> = trackDao.byKeysChunked(keys)
 
     // Keeps the first row of each key; rows come in _ID order.

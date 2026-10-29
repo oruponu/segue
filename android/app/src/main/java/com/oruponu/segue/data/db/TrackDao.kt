@@ -13,6 +13,9 @@ interface TrackDao {
 
     @Query("SELECT * FROM tracks WHERE `key` = :key") suspend fun byKey(key: String): TrackEntity?
 
+    @Query("SELECT * FROM tracks WHERE `key` = :key")
+    fun observeByKey(key: String): Flow<TrackEntity?>
+
     @Query("SELECT * FROM tracks WHERE `key` IN (:keys)")
     suspend fun byKeys(keys: List<String>): List<TrackEntity>
 
