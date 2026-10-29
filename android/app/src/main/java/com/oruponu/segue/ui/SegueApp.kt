@@ -46,6 +46,7 @@ import com.oruponu.segue.ui.player.MiniPlayer
 import com.oruponu.segue.ui.player.PlaybackCallbacks
 import com.oruponu.segue.ui.player.PlayerScreen
 import com.oruponu.segue.ui.player.PlayerViewModel
+import com.oruponu.segue.ui.player.rememberNotificationPermissionRequest
 import com.oruponu.segue.ui.player.rememberPositionMs
 import com.oruponu.segue.ui.sheet.MainLayout
 import com.oruponu.segue.ui.sheet.rememberSheetState
@@ -64,6 +65,7 @@ fun SegueApp() {
     val playerSheet = rememberSheetState()
     val analysisSheet = rememberSheetState()
     val scope = rememberCoroutineScope()
+    val requestNotifications = rememberNotificationPermissionRequest()
     val callbacks =
         remember(player) {
             PlaybackCallbacks(
@@ -131,6 +133,7 @@ fun SegueApp() {
                                         currentKey = playerState.playback.currentKey,
                                         isPlaying = playerState.playback.isPlaying,
                                         onTrackClick = { index ->
+                                            requestNotifications()
                                             player.play(album.tracks, index)
                                             scope.launch { playerSheet.expand() }
                                         },
