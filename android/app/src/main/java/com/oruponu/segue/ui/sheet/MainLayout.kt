@@ -18,8 +18,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.offset
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
@@ -139,7 +141,7 @@ private fun Sheet(
                         else Modifier.clearAndSetSemantics {},
                     ),
             ) {
-                expanded()
+                ProvideContentColor(expanded)
             }
             if (!expandedActive) {
                 // Keeps taps off the faded expanded layer; drags still reach the sheet.
@@ -151,11 +153,21 @@ private fun Sheet(
                         .testTag(collapsedTag)
                         .clickable { scope.launch { state.expand() } },
                 ) {
-                    collapsed()
+                    ProvideContentColor(collapsed)
                 }
             }
         }
     }
+}
+
+// The sheet paints the surface itself, so it also sets the matching content color, as a Surface
+// would.
+@Composable
+private fun ProvideContentColor(content: @Composable () -> Unit) {
+    CompositionLocalProvider(
+        LocalContentColor provides MaterialTheme.colorScheme.onSurface,
+        content,
+    )
 }
 
 /**
