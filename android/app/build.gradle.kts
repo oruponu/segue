@@ -63,6 +63,35 @@ room {
     schemaDirectory("$projectDir/schemas")
 }
 
+// Copies the style labels into the assets, so the app reads the same file as the core.
+abstract class CopyStyleLabels : DefaultTask() {
+    @get:InputFile @get:PathSensitive(PathSensitivity.NONE) abstract val labels: RegularFileProperty
+
+    @get:OutputDirectory abstract val outputDir: DirectoryProperty
+
+    @TaskAction
+    fun copy() {
+        labels
+            .get()
+            .asFile
+            .copyTo(outputDir.file("style-labels.json").get().asFile, overwrite = true)
+    }
+}
+
+val copyStyleLabels =
+    tasks.register<CopyStyleLabels>("copyStyleLabels") {
+        labels.set(layout.projectDirectory.file("../../core/spec/style-labels.json"))
+    }
+
+androidComponents {
+    onVariants { variant ->
+        variant.sources.assets?.addGeneratedSourceDirectory(
+            copyStyleLabels,
+            CopyStyleLabels::outputDir,
+        )
+    }
+}
+
 dependencies {
     val composeBom = platform(libs.androidx.compose.bom)
     implementation(composeBom)
