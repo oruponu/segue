@@ -26,4 +26,5 @@
     <string name="shuffle">シャッフル</string>
     <string name="repeat">リピート</string>
     <string name="pitch_label">キー %1$s</string>
+    <string name="collapse_player">プレーヤーを閉じる</string>
 </resources>
