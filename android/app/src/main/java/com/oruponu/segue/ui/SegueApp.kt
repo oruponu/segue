@@ -10,10 +10,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.windowInsetsBottomHeight
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -37,6 +40,7 @@ import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import com.oruponu.segue.R
 import com.oruponu.segue.library.SyncState
+import com.oruponu.segue.playback.PlaybackEvent
 import com.oruponu.segue.ui.library.AlbumDetailScreen
 import com.oruponu.segue.ui.library.AlbumListScreen
 import com.oruponu.segue.ui.library.FolderPickerScreen
@@ -52,6 +56,7 @@ import com.oruponu.segue.ui.sheet.MainLayout
 import com.oruponu.segue.ui.sheet.rememberSheetState
 import kotlinx.coroutines.launch
 
+private val MiniPlayerHeight = 72.dp
 private val AnalysisButtonHeight = 56.dp
 
 @Composable
@@ -66,6 +71,7 @@ fun SegueApp() {
     val analysisSheet = rememberSheetState()
     val scope = rememberCoroutineScope()
     val requestNotifications = rememberNotificationPermissionRequest()
+    val snackbar = remember { SnackbarHostState() }
     val callbacks =
         remember(player) {
             PlaybackCallbacks(
@@ -95,6 +101,15 @@ fun SegueApp() {
 
     LaunchedEffect(libraryState.sync) {
         if (libraryState.sync is SyncState.PermissionDenied) permission.refresh()
+    }
+
+    val skippedMessage = stringResource(R.string.skipped_unplayable)
+    LaunchedEffect(player) {
+        player.events.collect {
+            when (it) {
+                PlaybackEvent.SkippedUnplayable -> snackbar.showSnackbar(skippedMessage)
+            }
+        }
     }
 
     Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
@@ -186,6 +201,12 @@ fun SegueApp() {
             },
             // TODO: Replace this placeholder with the analysis screen.
             analysis = { Box(Modifier.fillMaxSize()) },
+        )
+        SnackbarHost(
+            snackbar,
+            Modifier.align(Alignment.BottomCenter)
+                .padding(bottom = MiniPlayerHeight)
+                .navigationBarsPadding(),
         )
     }
 }

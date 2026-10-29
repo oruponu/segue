@@ -28,4 +28,5 @@
     <string name="pitch_label">キー %1$s</string>
     <string name="collapse_player">プレーヤーを閉じる</string>
     <string name="analysis">解析</string>
+    <string name="skipped_unplayable">再生できない曲をスキップしました</string>
 </resources>
