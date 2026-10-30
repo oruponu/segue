@@ -33,4 +33,6 @@
     <string name="analysis_failed">解析できません</string>
     <string name="label_key">キー</string>
     <string name="label_styles">スタイル</string>
+    <string name="realtime">リアルタイム</string>
+    <string name="results">解析結果</string>
 </resources>
