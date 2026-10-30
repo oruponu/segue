@@ -21,7 +21,8 @@ BUILD_ROOT="${SEGUE_DEPS_BUILD_ROOT:-$CORE_DIR/deps/build/android}"
 DEPS_ROOT="$CORE_DIR/deps/android"
 JNILIBS_ROOT="$DEPS_ROOT/jniLibs"
 
-# Build against API 28 so the same libraries also work for the Flutter app (minSdk 28)
+# API 28 is below the apps' minSdk (33), so the libraries load on every supported device.
+# Raising it would mean rebuilding all the dependencies.
 ANDROID_API=28
 ABIS=("arm64-v8a")
 

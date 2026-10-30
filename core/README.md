@@ -29,9 +29,3 @@ bash scripts/download_models.sh
 cd android
 ./gradlew :core-bridge:connectedDebugAndroidTest
 ```
-
-`style-labels.json` in `spec/` is generated from the legacy Flutter app's label list:
-
-```bash
-python3 core/spec/generate_style_labels.py
-```

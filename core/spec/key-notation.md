@@ -1,6 +1,6 @@
 # Key notation
 
-Rules for turning `SegueMusicResult.key_note` (0-11, C=0) and `key_scale` (0=major, 1=minor) into a display string. They match the legacy Flutter app (`_noteToString` in `audio_analysis.dart`).
+Rules for turning `SegueMusicResult.key_note` (0-11, C=0) and `key_scale` (0=major, 1=minor) into a display string.
 
 | key_note | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
