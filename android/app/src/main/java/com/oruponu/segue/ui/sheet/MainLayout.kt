@@ -183,12 +183,14 @@ private fun SheetBackHandler(state: SheetState) {
         inGesture = true
         try {
             events.collect { state.seekTowardsCollapsed(it.progress) }
-            state.collapse()
         } catch (e: CancellationException) {
             scope.launch { state.expand() }
             throw e
         } finally {
             inGesture = false
         }
+        // Collapsing outside the handler turns it off at once, so a back pressed during the
+        // animation goes to the layer below instead of cancelling this one.
+        scope.launch { state.collapse() }
     }
 }

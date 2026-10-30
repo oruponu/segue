@@ -216,4 +216,21 @@ class MainLayoutTest {
         node(SheetTags.PLAYER).assertExists()
         assertEquals(listOf(Albums, AlbumDetail("a")), backStack.toList())
     }
+
+    @Test
+    fun secondBackDuringCollapseClosesPlayer() {
+        setContent()
+        openBoth()
+        val dispatcher = compose.activity.onBackPressedDispatcher
+        compose.mainClock.autoAdvance = false
+        compose.runOnUiThread { dispatcher.onBackPressed() }
+        compose.mainClock.advanceTimeBy(50)
+        compose.runOnUiThread { dispatcher.onBackPressed() }
+        compose.mainClock.autoAdvance = true
+
+        node(SheetTags.ANALYSIS).assertDoesNotExist()
+        node(SheetTags.PLAYER).assertDoesNotExist()
+        node(SheetTags.MINI_PLAYER).assertExists()
+        assertEquals(listOf(Albums, AlbumDetail("a")), backStack.toList())
+    }
 }
