@@ -8,10 +8,7 @@ import org.json.JSONObject
 object TestFixtures {
     data class Fixture(val name: String, val sourceSampleRate: Int)
 
-    /**
-     * Fixtures checked against the legacy implementation. expected.json is generated from this
-     * list.
-     */
+    /** Fixtures checked against the legacy results in expected.json. */
     val MAIN_FIXTURES =
         listOf(
             Fixture("click120_aminor_44k_stereo.wav", 44100),
