@@ -11,10 +11,12 @@ import androidx.media3.common.PlaybackParameters
 import androidx.media3.common.Player
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionCommand
+import androidx.media3.session.SessionError
 import androidx.media3.session.SessionResult
 import androidx.media3.session.SessionToken
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
+import com.oruponu.segue.R
 import com.oruponu.segue.data.db.TrackEntity
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
@@ -51,8 +53,26 @@ class PlaybackConnection @Inject constructor(@ApplicationContext private val con
     /** Connects unless already connected or connecting. May be called from any thread. */
     fun connect() = onMain(::startConnecting)
 
+    /**
+     * Releases the controller and drops operations waiting for it. [state] keeps the last values
+     * with `connected = false`, so the UI does not flash empty until the next connection. Playback
+     * goes on in the service. The next [connect] or operation connects again. May be called from
+     * any thread.
+     */
+    fun disconnect() = onMain {
+        pending.clear()
+        connecting?.let(MediaController::releaseFuture)
+        connecting = null
+        val released = controller
+        // Cleared first, so onDisconnected, which release() may call, does not reset the state.
+        controller = null
+        released?.release()
+        _state.value = _state.value.copy(connected = false)
+    }
+
     fun playAlbum(tracks: List<TrackEntity>, startIndex: Int) {
-        val items = tracks.map { it.toMediaItem() }
+        val unknownArtist = context.getString(R.string.unknown_artist)
+        val items = tracks.map { it.toMediaItem(unknownArtist) }
         perform {
             it.setMediaItems(items, startIndex, 0)
             it.prepare()
@@ -124,6 +144,8 @@ class PlaybackConnection @Inject constructor(@ApplicationContext private val con
     }
 
     private fun onConnected(future: ListenableFuture<MediaController>) {
+        // disconnect() released this future, or a newer connection replaced it.
+        if (connecting !== future) return
         connecting = null
         val connected =
             try {
@@ -154,11 +176,14 @@ class PlaybackConnection @Inject constructor(@ApplicationContext private val con
             positionAtElapsedMs = readAt,
             // C.TIME_UNSET is negative.
             durationMs = duration.coerceAtLeast(0),
+            title = currentMediaItem?.mediaMetadata?.title?.toString(),
+            artist = currentMediaItem?.mediaMetadata?.artist?.toString(),
             speed = playbackParameters.speed,
             pitchSemitones = semitonesOf(playbackParameters.pitch),
             shuffle = shuffleModeEnabled,
             repeatMode = repeatMode,
             hasNext = hasNextMediaItem(),
+            connected = true,
         )
     }
 
@@ -178,7 +203,7 @@ class PlaybackConnection @Inject constructor(@ApplicationContext private val con
                 _events.tryEmit(PlaybackEvent.SkippedUnplayable)
                 return Futures.immediateFuture(SessionResult(SessionResult.RESULT_SUCCESS))
             }
-            return Futures.immediateFuture(SessionResult(SessionResult.RESULT_ERROR_NOT_SUPPORTED))
+            return Futures.immediateFuture(SessionResult(SessionError.ERROR_NOT_SUPPORTED))
         }
 
         override fun onDisconnected(controller: MediaController) {

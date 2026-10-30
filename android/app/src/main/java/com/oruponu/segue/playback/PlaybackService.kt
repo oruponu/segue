@@ -20,6 +20,7 @@ import androidx.media3.session.SessionCommand
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 import com.google.common.util.concurrent.SettableFuture
+import com.oruponu.segue.R
 import com.oruponu.segue.data.db.TrackDao
 import com.oruponu.segue.data.db.byKeysChunked
 import dagger.hilt.android.AndroidEntryPoint
@@ -131,7 +132,12 @@ class PlaybackService : MediaLibraryService() {
         val saved = stateStore.saved.first()
         val tracks = trackDao.byKeysChunked(saved.queue).associateBy { it.key }
         val queue = restoreQueue(saved, tracks.keys) ?: return null
-        return Restored(saved, queue.keys.map { tracks.getValue(it).toMediaItem() }, queue)
+        val unknownArtist = getString(R.string.unknown_artist)
+        return Restored(
+            saved,
+            queue.keys.map { tracks.getValue(it).toMediaItem(unknownArtist) },
+            queue,
+        )
     }
 
     private fun applySettings(saved: SavedPlayback) {

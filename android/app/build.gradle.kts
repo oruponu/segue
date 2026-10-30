@@ -63,6 +63,35 @@ room {
     schemaDirectory("$projectDir/schemas")
 }
 
+// Copies the style labels into the assets, so the app reads the same file as the core.
+abstract class CopyStyleLabels : DefaultTask() {
+    @get:InputFile @get:PathSensitive(PathSensitivity.NONE) abstract val labels: RegularFileProperty
+
+    @get:OutputDirectory abstract val outputDir: DirectoryProperty
+
+    @TaskAction
+    fun copy() {
+        labels
+            .get()
+            .asFile
+            .copyTo(outputDir.file("style-labels.json").get().asFile, overwrite = true)
+    }
+}
+
+val copyStyleLabels =
+    tasks.register<CopyStyleLabels>("copyStyleLabels") {
+        labels.set(layout.projectDirectory.file("../../core/spec/style-labels.json"))
+    }
+
+androidComponents {
+    onVariants { variant ->
+        variant.sources.assets?.addGeneratedSourceDirectory(
+            copyStyleLabels,
+            CopyStyleLabels::outputDir,
+        )
+    }
+}
+
 dependencies {
     val composeBom = platform(libs.androidx.compose.bom)
     implementation(composeBom)
@@ -93,6 +122,8 @@ dependencies {
     testImplementation(libs.robolectric)
     testImplementation(libs.androidx.test.core)
     testImplementation(libs.androidx.room.testing)
+    testImplementation(composeBom)
+    testImplementation(libs.androidx.compose.ui.test.junit4)
 
     // Instrumented tests: jUnit rules and runners
     androidTestImplementation(libs.androidx.test.core)
@@ -106,6 +137,7 @@ dependencies {
     // Data layer
     implementation(project(":core-bridge"))
     implementation(libs.hilt.android)
+    implementation(libs.hilt.lifecycle.viewmodel.compose)
     ksp(libs.hilt.compiler)
     implementation(libs.androidx.room.runtime)
     ksp(libs.androidx.room.compiler)
@@ -117,6 +149,7 @@ dependencies {
     implementation(libs.androidx.media3.exoplayer)
     implementation(libs.androidx.media3.session)
     implementation(libs.coil)
+    implementation(libs.coil.compose)
 
     // Navigation
     implementation(libs.androidx.navigation3.ui)

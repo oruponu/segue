@@ -1,1 +1,0 @@
-enum AnalysisTab { realtime, results }

@@ -43,6 +43,7 @@ import org.junit.Test
 
 private const val TIMEOUT_MS = 5_000L
 private const val POSITION_TOLERANCE_MS = 500L
+private const val UNKNOWN_ARTIST = "Unknown"
 
 class PlaybackServiceTest {
     @get:Rule
@@ -104,7 +105,7 @@ class PlaybackServiceTest {
 
     @Test
     fun playsDeviceTrack() {
-        start(tracks.map { it.toMediaItem() })
+        start(tracks.map { it.toMediaItem(UNKNOWN_ARTIST) })
         awaitPlayer("playing the first track") {
             it.isPlaying && it.currentMediaItem?.mediaId == tracks[0].key
         }
@@ -112,7 +113,7 @@ class PlaybackServiceTest {
 
     @Test
     fun pauseSavesState() = runBlocking {
-        start(tracks.map { it.toMediaItem() })
+        start(tracks.map { it.toMediaItem(UNKNOWN_ARTIST) })
         awaitPlayer("playing") { it.isPlaying }
         onMain { controller().seekToNextMediaItem() }
         awaitPlayer("playing the second track") {
@@ -130,7 +131,7 @@ class PlaybackServiceTest {
     @Test
     fun unplayableTrackIsSkipped() {
         val broken = tracks[0].copy(mediaStoreId = Long.MAX_VALUE)
-        start(listOf(broken.toMediaItem(), tracks[1].toMediaItem()))
+        start(listOf(broken.toMediaItem(UNKNOWN_ARTIST), tracks[1].toMediaItem(UNKNOWN_ARTIST)))
         awaitPlayer("playing the second track") {
             it.isPlaying && it.currentMediaItem?.mediaId == tracks[1].key
         }
@@ -143,7 +144,9 @@ class PlaybackServiceTest {
 
     @Test
     fun allUnplayableWithRepeatAllStops() {
-        val items = tracks.map { it.copy(mediaStoreId = Long.MAX_VALUE).toMediaItem() }
+        val items = tracks.map {
+            it.copy(mediaStoreId = Long.MAX_VALUE).toMediaItem(UNKNOWN_ARTIST)
+        }
         onMain { controller().repeatMode = Player.REPEAT_MODE_ALL }
         awaitAllFailed(items)
         assertStaysStopped(items.lastIndex)
@@ -152,12 +155,12 @@ class PlaybackServiceTest {
 
     @Test
     fun newQueueAfterAllUnplayableStillSkips() {
-        val bad = tracks.map { it.copy(mediaStoreId = Long.MAX_VALUE).toMediaItem() }
+        val bad = tracks.map { it.copy(mediaStoreId = Long.MAX_VALUE).toMediaItem(UNKNOWN_ARTIST) }
         awaitAllFailed(bad)
         skipped.set(0)
         skippedSignal.drainPermits()
 
-        start(listOf(bad[0], tracks[1].toMediaItem()))
+        start(listOf(bad[0], tracks[1].toMediaItem(UNKNOWN_ARTIST)))
         awaitPlayer("playing the good track") {
             it.isPlaying && it.currentMediaItem?.mediaId == tracks[1].key
         }
@@ -169,7 +172,7 @@ class PlaybackServiceTest {
 
     @Test
     fun settingsChangedWhilePausedAreSaved() = runBlocking {
-        start(tracks.map { it.toMediaItem() })
+        start(tracks.map { it.toMediaItem(UNKNOWN_ARTIST) })
         awaitPlayer("playing") { it.isPlaying }
         onMain { controller().pause() }
         awaitPlayer("paused") { !it.isPlaying }
@@ -204,14 +207,14 @@ class PlaybackServiceTest {
 
     @Test
     fun queueChangedWhilePausedIsSaved() = runBlocking {
-        start(listOf(tracks[0].toMediaItem()))
+        start(listOf(tracks[0].toMediaItem(UNKNOWN_ARTIST)))
         awaitPlayer("playing") { it.isPlaying }
         onMain { controller().pause() }
         awaitPlayer("paused") { !it.isPlaying }
         awaitSaved("the queue") { it.queue == listOf(tracks[0].key) }
 
         // Neither change moves to another item, so only the playlist change can save them.
-        onMain { controller().addMediaItem(tracks[1].toMediaItem()) }
+        onMain { controller().addMediaItem(tracks[1].toMediaItem(UNKNOWN_ARTIST)) }
         awaitSaved("the added item") { it.queue == tracks.map { t -> t.key } }
         onMain { controller().moveMediaItem(1, 0) }
         val saved =
@@ -488,14 +491,7 @@ class PlaybackServiceTest {
         }
     }
 
-    // PlaybackConnection cannot disconnect yet, and an earlier test class in this process may have
-    // left it bound, which would keep the service alive. Its listener resets it on release.
-    private fun releaseAppConnection() {
-        // TODO: use PlaybackConnection.disconnect() once it exists.
-        val field =
-            PlaybackConnection::class.java.getDeclaredField("controller").apply {
-                isAccessible = true
-            }
-        (field.get(entryPoint.playbackConnection()) as MediaController?)?.release()
-    }
+    // An earlier test class in this process may have left the app's connection bound, which would
+    // keep the service alive. Called on the main thread, where disconnect() runs at once.
+    private fun releaseAppConnection() = entryPoint.playbackConnection().disconnect()
 }

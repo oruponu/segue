@@ -3,7 +3,13 @@ package com.oruponu.segue.data.db
 import android.content.Context
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withTimeout
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -87,5 +93,26 @@ class DaoTest {
         val found = db.trackDao().byKeysChunked(keys + "missing").map { it.key }
         assertEquals(keys.toSet(), found.toSet())
         assertEquals(keys.size, found.size)
+    }
+
+    // Room notifies on its own threads, so this test waits in real time rather than in runTest.
+    @Test
+    fun observeByKeyFollowsChanges() = runBlocking {
+        val dao = db.trackDao()
+        val rows = Channel<TrackEntity?>(Channel.UNLIMITED)
+        val job =
+            launch(Dispatchers.Default) {
+                dao.observeByKey("a").distinctUntilChanged().collect { rows.send(it) }
+            }
+        suspend fun next() = withTimeout(5_000) { rows.receive() }
+
+        assertNull(next())
+        dao.upsert(listOf(track("a")))
+        assertEquals(track("a"), next())
+        dao.upsert(listOf(track("a").copy(size = 20L)))
+        assertEquals(20L, next()?.size)
+        dao.delete(listOf("a"))
+        assertNull(next())
+        job.cancel()
     }
 }

@@ -4,6 +4,8 @@ import android.content.Context
 import android.util.Log
 import com.oruponu.segue.data.ApplicationScope
 import com.oruponu.segue.playback.PlaybackConnection
+import com.oruponu.segue.ui.analysis.StyleLabels
+import com.oruponu.segue.ui.analysis.loadStyleLabels
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -35,7 +37,7 @@ abstract class AnalysisModule {
             @ApplicationScope scope: CoroutineScope,
         ): AnalysisCoordinator =
             AnalysisCoordinator(
-                connection.state.map { it.currentKey },
+                connection.state.map { it.connectedKey },
                 repository::setCurrent,
                 scope,
             )
@@ -64,5 +66,10 @@ abstract class AnalysisModule {
                 Log.w("ModelStore", "Cannot prepare the model", it)
             }
         }
+
+        @Provides
+        @Singleton
+        fun provideStyleLabels(@ApplicationContext context: Context): StyleLabels =
+            loadStyleLabels(context.assets)
     }
 }

@@ -6,8 +6,3 @@ add_subdirectory(${SEGUE_CORE_DIR} ${CMAKE_CURRENT_BINARY_DIR}/segue_core)
 
 add_library(segue_bridge SHARED segue_jni.cpp)
 target_link_libraries(segue_bridge PRIVATE segue_core)
-
-# JNI used only to generate baseline data with the legacy implementation (the Flutter app's).
-# Remove together with the Flutter app.
-add_library(segue_legacy_jni SHARED legacy_baseline_jni.cpp)
-target_link_libraries(segue_legacy_jni PRIVATE segue_legacy)

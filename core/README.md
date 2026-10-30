@@ -8,7 +8,6 @@ The Segue analysis engine (C++17). It decodes audio, computes the waveform, spec
 | `src/` | Implementation |
 | `spec/` | Analysis specs (cache format, key notation, style label table). The apps follow them |
 | `testdata/` | Test audio and the legacy results (`expected.json`) |
-| `legacy/` | Native API of the legacy Flutter app. It will be removed together with the Flutter app |
 | `scripts/build_deps.sh` | Builds the dependencies |
 
 ## Building the dependencies
@@ -29,10 +28,4 @@ The tests run as Android instrumented tests on an arm64 device. Connect the devi
 bash scripts/download_models.sh
 cd android
 ./gradlew :core-bridge:connectedDebugAndroidTest
-```
-
-`style-labels.json` in `spec/` is generated from the legacy Flutter app's label list:
-
-```bash
-python3 core/spec/generate_style_labels.py
 ```
