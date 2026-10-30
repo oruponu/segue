@@ -54,17 +54,20 @@ class PlaybackConnection @Inject constructor(@ApplicationContext private val con
     fun connect() = onMain(::startConnecting)
 
     /**
-     * Releases the controller, drops operations waiting for it and resets [state]. Playback goes on
-     * in the service. The next [connect] or operation connects again. May be called from any
-     * thread.
+     * Releases the controller and drops operations waiting for it. [state] keeps the last values
+     * with `connected = false`, so the UI does not flash empty until the next connection. Playback
+     * goes on in the service. The next [connect] or operation connects again. May be called from
+     * any thread.
      */
     fun disconnect() = onMain {
         pending.clear()
         connecting?.let(MediaController::releaseFuture)
         connecting = null
-        controller?.release()
+        val released = controller
+        // Cleared first, so onDisconnected, which release() may call, does not reset the state.
         controller = null
-        _state.value = PlayerUiState()
+        released?.release()
+        _state.value = _state.value.copy(connected = false)
     }
 
     fun playAlbum(tracks: List<TrackEntity>, startIndex: Int) {
@@ -180,6 +183,7 @@ class PlaybackConnection @Inject constructor(@ApplicationContext private val con
             shuffle = shuffleModeEnabled,
             repeatMode = repeatMode,
             hasNext = hasNextMediaItem(),
+            connected = true,
         )
     }
 

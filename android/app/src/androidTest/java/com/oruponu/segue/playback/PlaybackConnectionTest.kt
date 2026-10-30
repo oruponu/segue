@@ -130,7 +130,9 @@ class PlaybackConnectionTest {
 
         connection.disconnect()
 
-        awaitState("the default state") { it == PlayerUiState() }
+        val state = awaitState("disconnected") { !it.connected }
+        assertEquals(tracks[0].key, state.currentKey)
+        assertEquals(null, state.connectedKey)
         assertTrue("The service stopped playing", onMain { controller!!.isPlaying })
     }
 
@@ -307,12 +309,15 @@ class PlaybackConnectionTest {
         playbackParameters = PlaybackParameters.DEFAULT
     }
 
+    // A disconnected connection has already stopped the analysis and reads the reset session when
+    // it connects again.
     private fun PlayerUiState.isReset(): Boolean =
-        currentKey == null &&
-            !shuffle &&
-            repeatMode == Player.REPEAT_MODE_OFF &&
-            speed == 1f &&
-            pitchSemitones == 0
+        !connected ||
+            currentKey == null &&
+                !shuffle &&
+                repeatMode == Player.REPEAT_MODE_OFF &&
+                speed == 1f &&
+                pitchSemitones == 0
 
     private fun awaitState(what: String, condition: (PlayerUiState) -> Boolean): PlayerUiState =
         runBlocking {

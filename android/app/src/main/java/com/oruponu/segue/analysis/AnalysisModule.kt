@@ -37,7 +37,7 @@ abstract class AnalysisModule {
             @ApplicationScope scope: CoroutineScope,
         ): AnalysisCoordinator =
             AnalysisCoordinator(
-                connection.state.map { it.currentKey },
+                connection.state.map { it.connectedKey },
                 repository::setCurrent,
                 scope,
             )
