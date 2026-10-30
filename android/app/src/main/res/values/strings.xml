@@ -29,4 +29,8 @@
     <string name="collapse_player">プレーヤーを閉じる</string>
     <string name="analysis">解析</string>
     <string name="skipped_unplayable">再生できない曲をスキップしました</string>
+    <string name="no_analysis">解析データなし</string>
+    <string name="analysis_failed">解析できません</string>
+    <string name="label_key">キー</string>
+    <string name="label_styles">スタイル</string>
 </resources>
