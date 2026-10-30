@@ -41,6 +41,7 @@ import androidx.navigation3.ui.NavDisplay
 import com.oruponu.segue.R
 import com.oruponu.segue.library.SyncState
 import com.oruponu.segue.playback.PlaybackEvent
+import com.oruponu.segue.ui.analysis.AnalysisSheet
 import com.oruponu.segue.ui.library.AlbumDetailScreen
 import com.oruponu.segue.ui.library.AlbumListScreen
 import com.oruponu.segue.ui.library.FolderPickerScreen
@@ -199,8 +200,14 @@ fun SegueApp() {
                     Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
                 }
             },
-            // TODO: Replace this placeholder with the analysis screen.
-            analysis = { Box(Modifier.fillMaxSize()) },
+            analysis = {
+                AnalysisSheet(
+                    ui = playerState,
+                    positionMs = position.value,
+                    sheet = analysisSheet,
+                    callbacks = callbacks,
+                )
+            },
         )
         SnackbarHost(
             snackbar,
