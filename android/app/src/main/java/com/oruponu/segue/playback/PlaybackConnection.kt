@@ -16,6 +16,7 @@ import androidx.media3.session.SessionResult
 import androidx.media3.session.SessionToken
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
+import com.oruponu.segue.R
 import com.oruponu.segue.data.db.TrackEntity
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
@@ -67,7 +68,8 @@ class PlaybackConnection @Inject constructor(@ApplicationContext private val con
     }
 
     fun playAlbum(tracks: List<TrackEntity>, startIndex: Int) {
-        val items = tracks.map { it.toMediaItem() }
+        val unknownArtist = context.getString(R.string.unknown_artist)
+        val items = tracks.map { it.toMediaItem(unknownArtist) }
         perform {
             it.setMediaItems(items, startIndex, 0)
             it.prepare()
