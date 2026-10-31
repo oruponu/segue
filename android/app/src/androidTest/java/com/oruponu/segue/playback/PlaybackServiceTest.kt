@@ -3,6 +3,7 @@ package com.oruponu.segue.playback
 import android.Manifest
 import android.content.ComponentName
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackParameters
@@ -17,6 +18,7 @@ import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 import com.oruponu.segue.data.db.TrackEntity
 import com.oruponu.segue.library.AndroidMediaStoreSource
+import com.oruponu.segue.library.contentUri
 import com.oruponu.segue.library.toEntity
 import dagger.hilt.android.EntryPointAccessors
 import java.util.Collections
@@ -129,8 +131,58 @@ class PlaybackServiceTest {
     }
 
     @Test
-    fun unplayableTrackIsSkipped() {
-        val broken = tracks[0].copy(mediaStoreId = Long.MAX_VALUE)
+    fun controllerUriIsIgnored() {
+        // A controller can pass a URI only in the request metadata.
+        val item =
+            MediaItem.Builder()
+                .setMediaId(tracks[0].key)
+                .setRequestMetadata(requestUri(Uri.parse("content://invalid/1")))
+                .build()
+        start(listOf(item))
+        awaitPlayer("playing the library track") {
+            it.isPlaying && it.currentMediaItem?.mediaId == tracks[0].key
+        }
+    }
+
+    @Test
+    fun trackOutsideLibraryIsDropped() {
+        val outside =
+            MediaItem.Builder()
+                .setMediaId(outsideKey())
+                .setRequestMetadata(requestUri(tracks[0].contentUri()))
+                .build()
+        start(listOf(outside, tracks[1].toMediaItem(UNKNOWN_ARTIST)))
+        awaitPlayer("playing only the library track") {
+            it.isPlaying && it.mediaItemCount == 1 && it.currentMediaItem?.mediaId == tracks[1].key
+        }
+    }
+
+    @Test
+    fun queueOutsideLibraryKeepsCurrentQueue() {
+        start(tracks.map { it.toMediaItem(UNKNOWN_ARTIST) })
+        awaitPlayer("playing") { it.isPlaying }
+        onMain {
+            controller().setMediaItems(listOf(MediaItem.Builder().setMediaId(outsideKey()).build()))
+        }
+        // The rejected command leaves no event to wait for, so give it time to arrive.
+        Thread.sleep(1_000)
+
+        val other = connect()
+        try {
+            val (queue, playing) =
+                onMain {
+                    other.run { List(mediaItemCount) { getMediaItemAt(it).mediaId } to isPlaying }
+                }
+            assertEquals(tracks.map { it.key }, queue)
+            assertTrue(playing)
+        } finally {
+            onMain { other.release() }
+        }
+    }
+
+    @Test
+    fun unplayableTrackIsSkipped() = runBlocking {
+        val broken = brokenTrack(tracks[0])
         start(listOf(broken.toMediaItem(UNKNOWN_ARTIST), tracks[1].toMediaItem(UNKNOWN_ARTIST)))
         awaitPlayer("playing the second track") {
             it.isPlaying && it.currentMediaItem?.mediaId == tracks[1].key
@@ -143,10 +195,8 @@ class PlaybackServiceTest {
     }
 
     @Test
-    fun allUnplayableWithRepeatAllStops() {
-        val items = tracks.map {
-            it.copy(mediaStoreId = Long.MAX_VALUE).toMediaItem(UNKNOWN_ARTIST)
-        }
+    fun allUnplayableWithRepeatAllStops() = runBlocking {
+        val items = tracks.map { brokenTrack(it).toMediaItem(UNKNOWN_ARTIST) }
         onMain { controller().repeatMode = Player.REPEAT_MODE_ALL }
         awaitAllFailed(items)
         assertStaysStopped(items.lastIndex)
@@ -154,8 +204,8 @@ class PlaybackServiceTest {
     }
 
     @Test
-    fun newQueueAfterAllUnplayableStillSkips() {
-        val bad = tracks.map { it.copy(mediaStoreId = Long.MAX_VALUE).toMediaItem(UNKNOWN_ARTIST) }
+    fun newQueueAfterAllUnplayableStillSkips() = runBlocking {
+        val bad = tracks.map { brokenTrack(it).toMediaItem(UNKNOWN_ARTIST) }
         awaitAllFailed(bad)
         skipped.set(0)
         skippedSignal.drainPermits()
@@ -289,6 +339,22 @@ class PlaybackServiceTest {
     }
 
     private fun controller(): MediaController = controller!!
+
+    private fun outsideKey() = "SegueTest/outside-${System.nanoTime()}.mp3"
+
+    private fun requestUri(uri: Uri) = MediaItem.RequestMetadata.Builder().setMediaUri(uri).build()
+
+    /** Adds a library track whose URI points to no file; tearDown removes it. */
+    private suspend fun brokenTrack(base: TrackEntity): TrackEntity {
+        val broken =
+            base.copy(
+                key = "SegueTest/broken-${System.nanoTime()}.mp3",
+                mediaStoreId = Long.MAX_VALUE,
+            )
+        trackDao.upsert(listOf(broken))
+        insertedKeys = insertedKeys + broken.key
+        return broken
+    }
 
     private fun start(items: List<MediaItem>) = onMain { controller().startWith(items) }
 

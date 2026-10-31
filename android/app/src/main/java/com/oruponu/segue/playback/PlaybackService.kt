@@ -17,7 +17,6 @@ import androidx.media3.session.MediaLibraryService.MediaLibrarySession
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSession.MediaItemsWithStartPosition
 import androidx.media3.session.SessionCommand
-import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 import com.google.common.util.concurrent.SettableFuture
 import com.oruponu.segue.R
@@ -130,14 +129,29 @@ class PlaybackService : MediaLibraryService() {
 
     private suspend fun loadRestored(): Restored? {
         val saved = stateStore.saved.first()
-        val tracks = trackDao.byKeysChunked(saved.queue).associateBy { it.key }
-        val queue = restoreQueue(saved, tracks.keys) ?: return null
+        val items = libraryItems(saved.queue)
+        val queue = restoreQueue(saved, items.keys) ?: return null
+        return Restored(saved, queue.keys.map(items::getValue), queue)
+    }
+
+    /** Keys not in the library are left out. */
+    private suspend fun libraryItems(keys: List<String>): Map<String, MediaItem> {
         val unknownArtist = getString(R.string.unknown_artist)
-        return Restored(
-            saved,
-            queue.keys.map { tracks.getValue(it).toMediaItem(unknownArtist) },
-            queue,
-        )
+        return trackDao.byKeysChunked(keys).associate { it.key to it.toMediaItem(unknownArtist) }
+    }
+
+    private fun <T> future(block: suspend () -> T): ListenableFuture<T> {
+        val future = SettableFuture.create<T>()
+        scope
+            .launch {
+                try {
+                    future.set(block())
+                } catch (e: Exception) {
+                    future.setException(e)
+                }
+            }
+            .invokeOnCompletion { cause -> cause?.let(future::setException) }
+        return future
     }
 
     private fun applySettings(saved: SavedPlayback) {
@@ -242,13 +256,17 @@ class PlaybackService : MediaLibraryService() {
         }
     }
 
+    // The service is exported, so any app can connect and send items. Only the media ID is taken
+    // from them; the URI and metadata come from the library.
     private inner class SessionCallback : MediaLibrarySession.Callback {
         override fun onAddMediaItems(
             mediaSession: MediaSession,
             controller: MediaSession.ControllerInfo,
             mediaItems: List<MediaItem>,
-        ): ListenableFuture<List<MediaItem>> =
-            Futures.immediateFuture(mediaItems.map { it.withResolvedUri() })
+        ): ListenableFuture<List<MediaItem>> = future {
+            val items = libraryItems(mediaItems.map { it.mediaId })
+            mediaItems.mapNotNull { items[it.mediaId] }
+        }
 
         override fun onSetMediaItems(
             mediaSession: MediaSession,
@@ -256,43 +274,37 @@ class PlaybackService : MediaLibraryService() {
             mediaItems: List<MediaItem>,
             startIndex: Int,
             startPositionMs: Long,
-        ): ListenableFuture<MediaItemsWithStartPosition> =
-            Futures.immediateFuture(
-                MediaItemsWithStartPosition(
-                    mediaItems.map { it.withResolvedUri() },
-                    startIndex,
-                    startPositionMs,
-                ),
+        ): ListenableFuture<MediaItemsWithStartPosition> = future {
+            val keys = mediaItems.map { it.mediaId }
+            if (keys.isEmpty()) {
+                return@future MediaItemsWithStartPosition(emptyList(), startIndex, startPositionMs)
+            }
+            val items = libraryItems(keys)
+            // Failing keeps the current queue, where an empty result would clear it.
+            val queue =
+                keepExisting(keys, startIndex, startPositionMs, items.keys)
+                    ?: throw IllegalArgumentException("No requested track is in the library")
+            // An unset index asks for the default start, which dropping a track does not change.
+            val unset = startIndex == C.INDEX_UNSET
+            MediaItemsWithStartPosition(
+                queue.keys.map(items::getValue),
+                if (unset) C.INDEX_UNSET else queue.startIndex,
+                if (unset) startPositionMs else queue.startPositionMs,
             )
+        }
 
         override fun onPlaybackResumption(
             mediaSession: MediaSession,
             controller: MediaSession.ControllerInfo,
             isForPlayback: Boolean,
-        ): ListenableFuture<MediaItemsWithStartPosition> {
-            val future = SettableFuture.create<MediaItemsWithStartPosition>()
-            scope
-                .launch {
-                    try {
-                        val restored = loadRestored()
-                        if (restored == null) {
-                            future.setException(IllegalStateException("No saved track remains"))
-                        } else {
-                            if (isForPlayback) applySettings(restored.saved)
-                            future.set(
-                                MediaItemsWithStartPosition(
-                                    restored.items,
-                                    restored.queue.startIndex,
-                                    restored.queue.startPositionMs,
-                                ),
-                            )
-                        }
-                    } catch (e: Exception) {
-                        future.setException(e)
-                    }
-                }
-                .invokeOnCompletion { cause -> cause?.let(future::setException) }
-            return future
+        ): ListenableFuture<MediaItemsWithStartPosition> = future {
+            val restored = loadRestored() ?: throw IllegalStateException("No saved track remains")
+            if (isForPlayback) applySettings(restored.saved)
+            MediaItemsWithStartPosition(
+                restored.items,
+                restored.queue.startIndex,
+                restored.queue.startPositionMs,
+            )
         }
     }
 

@@ -235,7 +235,14 @@ class PlaybackConnectionTest {
                 async(Dispatchers.Default, start = CoroutineStart.UNDISPATCHED) {
                     withTimeoutOrNull(TIMEOUT_MS) { connection.events.first() }
                 }
-            val broken = tracks[0].copy(mediaStoreId = Long.MAX_VALUE)
+            // The service plays only library tracks, so the broken one goes into the library.
+            val broken =
+                tracks[0].copy(
+                    key = "SegueTest/broken-${System.nanoTime()}.mp3",
+                    mediaStoreId = Long.MAX_VALUE,
+                )
+            trackDao.upsert(listOf(broken))
+            insertedKeys = insertedKeys + broken.key
             connection.playAlbum(listOf(broken, tracks[1]), 0)
 
             assertEquals(PlaybackEvent.SkippedUnplayable, event.await())

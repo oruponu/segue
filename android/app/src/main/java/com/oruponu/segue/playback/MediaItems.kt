@@ -13,7 +13,6 @@ fun TrackEntity.toMediaItem(unknownArtist: String): MediaItem {
     return MediaItem.Builder()
         .setMediaId(key)
         .setUri(uri)
-        .setRequestMetadata(MediaItem.RequestMetadata.Builder().setMediaUri(uri).build())
         .setMediaMetadata(
             MediaMetadata.Builder()
                 .setTitle(title)
@@ -23,14 +22,4 @@ fun TrackEntity.toMediaItem(unknownArtist: String): MediaItem {
                 .build(),
         )
         .build()
-}
-
-/**
- * Items sent by a MediaController arrive without localConfiguration; the URI travels in the request
- * metadata.
- */
-fun MediaItem.withResolvedUri(): MediaItem {
-    if (localConfiguration != null) return this
-    val uri = requestMetadata.mediaUri ?: return this
-    return buildUpon().setUri(uri).build()
 }

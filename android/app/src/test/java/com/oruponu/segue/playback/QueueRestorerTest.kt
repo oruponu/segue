@@ -68,4 +68,20 @@ class QueueRestorerTest {
         assertNull(restoreQueue(saved, emptySet()))
         assertNull(restoreQueue(SavedPlayback(), setOf("a")))
     }
+
+    @Test
+    fun keepExistingFollowsStartIndexAcrossDroppedTracks() {
+        assertEquals(
+            RestoredQueue(listOf("a", "b"), 1, 5000),
+            keepExisting(listOf("x", "a", "y", "b"), 3, 5000, setOf("a", "b")),
+        )
+    }
+
+    @Test
+    fun keepExistingWithDroppedStartUsesNextSurvivor() {
+        assertEquals(
+            RestoredQueue(listOf("a", "b"), 1, 0),
+            keepExisting(listOf("a", "x", "b"), 1, 5000, setOf("a", "b")),
+        )
+    }
 }
