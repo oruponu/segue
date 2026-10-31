@@ -5,6 +5,7 @@ import androidx.room.withTransaction
 import com.oruponu.segue.analysis.AnalysisCanceller
 import com.oruponu.segue.analysis.VisualsCache
 import com.oruponu.segue.data.ApplicationScope
+import com.oruponu.segue.data.DefaultDispatcher
 import com.oruponu.segue.data.TrackStoreLock
 import com.oruponu.segue.data.db.AnalysisDao
 import com.oruponu.segue.data.db.SegueDatabase
@@ -15,6 +16,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.coroutines.cancellation.CancellationException
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
@@ -24,6 +26,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
@@ -44,8 +47,11 @@ constructor(
     private val visualsCache: VisualsCache,
     private val canceller: AnalysisCanceller,
     @param:ApplicationScope private val scope: CoroutineScope,
+    @param:DefaultDispatcher private val defaultDispatcher: CoroutineDispatcher,
 ) {
-    val albums: Flow<List<Album>> = trackDao.observeAll().map(::groupAlbums)
+    // Grouping sorts the whole library, so it stays off the collector's main thread.
+    val albums: Flow<List<Album>> =
+        trackDao.observeAll().map(::groupAlbums).flowOn(defaultDispatcher)
 
     private val _syncState = MutableStateFlow<SyncState>(SyncState.Idle)
     val syncState: StateFlow<SyncState> = _syncState.asStateFlow()

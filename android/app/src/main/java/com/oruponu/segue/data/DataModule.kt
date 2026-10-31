@@ -37,6 +37,10 @@ object DataModule {
     @Provides @IoDispatcher fun provideIoDispatcher(): CoroutineDispatcher = Dispatchers.IO
 
     @Provides
+    @DefaultDispatcher
+    fun provideDefaultDispatcher(): CoroutineDispatcher = Dispatchers.Default
+
+    @Provides
     @Singleton
     fun provideDatabase(@ApplicationContext context: Context): SegueDatabase =
         Room.databaseBuilder(context, SegueDatabase::class.java, "segue.db").build()

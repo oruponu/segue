@@ -83,6 +83,7 @@ class LibraryRepositoryTest {
             visualsCache = cache,
             canceller = canceller,
             scope = backgroundScope,
+            defaultDispatcher = UnconfinedTestDispatcher(testScheduler),
         )
 
     private fun track(
