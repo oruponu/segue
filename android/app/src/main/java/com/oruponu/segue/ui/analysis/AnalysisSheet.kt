@@ -46,7 +46,7 @@ private enum class AnalysisTab(@param:StringRes val label: Int) {
 @Composable
 fun AnalysisSheet(
     ui: PlayerUi,
-    positionMs: Long,
+    positionMs: () -> Long,
     sheet: SheetState,
     callbacks: PlaybackCallbacks,
     modifier: Modifier = Modifier,

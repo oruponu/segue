@@ -45,7 +45,7 @@ class AnalysisSheetTest {
     private val sheet = SheetState(SheetValue.Expanded)
 
     private fun setContent() {
-        compose.setContent { AnalysisSheet(ui, positionMs = 0, sheet = sheet, callbacks) }
+        compose.setContent { AnalysisSheet(ui, positionMs = { 0 }, sheet = sheet, callbacks) }
     }
 
     @Test

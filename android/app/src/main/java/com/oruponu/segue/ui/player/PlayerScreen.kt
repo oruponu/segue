@@ -44,7 +44,7 @@ private val AnalysisButtonHeight = 56.dp
 @Composable
 fun PlayerScreen(
     ui: PlayerUi,
-    positionMs: Long,
+    positionMs: () -> Long,
     callbacks: PlaybackCallbacks,
     onCollapse: () -> Unit,
     modifier: Modifier = Modifier,

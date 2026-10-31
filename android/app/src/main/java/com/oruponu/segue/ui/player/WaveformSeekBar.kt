@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -45,10 +46,13 @@ fun waveformBars(visuals: Visuals, barCount: Int): FloatArray {
 
 fun seekFraction(x: Float, width: Float): Float = (x / width).coerceIn(0f, 1f)
 
+fun positionFraction(positionMs: Long, durationMs: Long): Float =
+    if (durationMs > 0) (positionMs.toFloat() / durationMs).coerceIn(0f, 1f) else 0f
+
 @Composable
 fun WaveformSeekBar(
     visuals: Visuals?,
-    positionMs: Long,
+    positionMs: () -> Long,
     durationMs: Long,
     onSeek: (Long) -> Unit,
     modifier: Modifier = Modifier,
@@ -57,10 +61,14 @@ fun WaveformSeekBar(
     var dragFraction by remember { mutableStateOf<Float?>(null) }
     val currentDuration by rememberUpdatedState(durationMs)
     val currentOnSeek by rememberUpdatedState(onSeek)
-    val fraction =
-        dragFraction
-            ?: if (durationMs > 0) (positionMs.toFloat() / durationMs).coerceIn(0f, 1f) else 0f
-    val shownMs = dragFraction?.let { (durationMs * it).toLong() } ?: positionMs
+    val currentPosition by rememberUpdatedState(positionMs)
+    // Changes once a second, so the time text recomposes then rather than every frame.
+    val shownTime by remember {
+        derivedStateOf {
+            val shownMs = dragFraction?.let { (currentDuration * it).toLong() } ?: currentPosition()
+            formatDuration(shownMs)
+        }
+    }
 
     val color = MaterialTheme.colorScheme.onSurface
     Column(modifier) {
@@ -99,6 +107,7 @@ fun WaveformSeekBar(
                         )
                     },
             ) {
+                val fraction = dragFraction ?: positionFraction(positionMs(), durationMs)
                 val played = fraction * size.width
                 if (bars == null) {
                     val height = MinBarHeight.toPx()
@@ -124,7 +133,7 @@ fun WaveformSeekBar(
             }
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            TimeText(formatDuration(shownMs))
+            TimeText(shownTime)
             TimeText(formatDuration(durationMs.coerceAtLeast(0)))
         }
     }

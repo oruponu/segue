@@ -86,7 +86,7 @@ fun SegueApp() {
                 onPitch = player::setPitch,
             )
         }
-    // Read inside the sheet slots only, so the frame-by-frame position recomposes just them.
+    // Passed as a lambda and read while drawing, so the per-frame position skips recomposition.
     val position = rememberPositionMs(playerState.playback)
 
     LaunchedEffect(permission.granted) {
@@ -172,7 +172,7 @@ fun SegueApp() {
             miniPlayer = {
                 MiniPlayer(
                     ui = playerState,
-                    positionMs = position.value,
+                    positionMs = { position.value },
                     onPlayPause = player::togglePlayPause,
                     onNext = player::next,
                 )
@@ -180,7 +180,7 @@ fun SegueApp() {
             player = {
                 PlayerScreen(
                     ui = playerState,
-                    positionMs = position.value,
+                    positionMs = { position.value },
                     callbacks = callbacks,
                     onCollapse = { scope.launch { playerSheet.collapse() } },
                 )
@@ -203,7 +203,7 @@ fun SegueApp() {
             analysis = {
                 AnalysisSheet(
                     ui = playerState,
-                    positionMs = position.value,
+                    positionMs = { position.value },
                     sheet = analysisSheet,
                     callbacks = callbacks,
                 )

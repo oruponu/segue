@@ -47,7 +47,7 @@ class WaveformSeekBarTest {
             Box(Modifier.width(300.dp)) {
                 WaveformSeekBar(
                     visuals = visuals,
-                    positionMs = 0,
+                    positionMs = { 0 },
                     durationMs = durationMs,
                     onSeek = { seeks += it },
                     modifier = Modifier.testTag(TAG),

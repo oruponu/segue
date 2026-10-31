@@ -45,7 +45,7 @@ class PlayerScreenTest {
                         playback = PlayerUiState(currentKey = "a", title = "T", artist = "A"),
                         analysis = analysis,
                     ),
-                positionMs = 0,
+                positionMs = { 0 },
                 callbacks = callbacks,
                 onCollapse = { collapses++ },
             )

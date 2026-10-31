@@ -29,7 +29,7 @@ class MiniPlayerTest {
         compose.setContent {
             MiniPlayer(
                 ui = PlayerUi(playback = playback),
-                positionMs = positionMs,
+                positionMs = { positionMs },
                 onPlayPause = { playPauses++ },
                 onNext = {},
             )

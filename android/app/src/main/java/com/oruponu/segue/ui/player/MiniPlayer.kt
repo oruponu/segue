@@ -38,16 +38,14 @@ private val ProgressHeight = 2.dp
 @Composable
 fun MiniPlayer(
     ui: PlayerUi,
-    positionMs: Long,
+    positionMs: () -> Long,
     onPlayPause: () -> Unit,
     onNext: () -> Unit,
     modifier: Modifier = Modifier,
     progressOnTop: Boolean = false,
 ) {
     val playback = ui.playback
-    val fraction =
-        if (playback.durationMs > 0) (positionMs.toFloat() / playback.durationMs).coerceIn(0f, 1f)
-        else 0f
+    val fraction = { positionFraction(positionMs(), playback.durationMs) }
     Column(
         modifier
             .fillMaxWidth()
@@ -101,9 +99,9 @@ fun MiniPlayer(
 }
 
 @Composable
-private fun Progress(fraction: Float) {
+private fun Progress(fraction: () -> Float) {
     LinearProgressIndicator(
-        progress = { fraction },
+        progress = fraction,
         modifier = Modifier.fillMaxWidth().height(ProgressHeight),
         color = MaterialTheme.colorScheme.primary,
         trackColor = Color.Transparent,
